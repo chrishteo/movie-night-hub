@@ -8,6 +8,7 @@ import Header from './components/Header'
 import FilterBar from './components/FilterBar'
 import MovieGrid from './components/MovieGrid'
 import MovieForm from './components/MovieForm'
+import MovieDetailsModal from './components/MovieDetailsModal'
 import AddUserModal from './components/AddUserModal'
 import SpinWheel from './components/SpinWheel'
 import VotingModal from './components/VotingModal'
@@ -15,6 +16,7 @@ import Recommendations from './components/Recommendations'
 import WatchHistory from './components/WatchHistory'
 import MovieOfTheWeek from './components/MovieOfTheWeek'
 import ShareModal from './components/ShareModal'
+import StatsModal from './components/StatsModal'
 import Confetti from './components/Confetti'
 import WinnerOverlay from './components/WinnerOverlay'
 
@@ -64,6 +66,7 @@ export default function App() {
   // Modal states
   const [showAddMovie, setShowAddMovie] = useState(false)
   const [editingMovie, setEditingMovie] = useState(null)
+  const [selectedMovie, setSelectedMovie] = useState(null)
   const [showAddUser, setShowAddUser] = useState(false)
   const [showWheel, setShowWheel] = useState(false)
   const [showVoting, setShowVoting] = useState(false)
@@ -71,6 +74,7 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false)
   const [showMOTW, setShowMOTW] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [showStats, setShowStats] = useState(false)
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -86,6 +90,18 @@ export default function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [darkMode])
+
+  // Keep selectedMovie in sync with movies array
+  useEffect(() => {
+    if (selectedMovie) {
+      const updated = movies.find(m => m.id === selectedMovie.id)
+      if (updated) {
+        setSelectedMovie(updated)
+      } else {
+        setSelectedMovie(null)
+      }
+    }
+  }, [movies])
 
   // Filter and sort movies
   const filteredMovies = sortMovies(
@@ -269,6 +285,12 @@ export default function App() {
         >
           🔗
         </button>
+        <button
+          onClick={() => setShowStats(true)}
+          className="px-3 py-1.5 rounded text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+        >
+          📊
+        </button>
       </div>
 
       {/* Filter Bar */}
@@ -285,6 +307,7 @@ export default function App() {
         onToggleFavorite={toggleFavorite}
         onEdit={setEditingMovie}
         onDelete={handleDeleteMovie}
+        onMovieClick={setSelectedMovie}
         darkMode={darkMode}
       />
 
@@ -307,6 +330,17 @@ export default function App() {
           onClose={() => setEditingMovie(null)}
           title="Edit Movie"
           isEdit={true}
+          darkMode={darkMode}
+        />
+      )}
+
+      {selectedMovie && (
+        <MovieDetailsModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          onEdit={setEditingMovie}
+          onToggleWatched={toggleWatched}
+          onToggleFavorite={toggleFavorite}
           darkMode={darkMode}
         />
       )}
@@ -373,6 +407,14 @@ export default function App() {
         <ShareModal
           movies={movies}
           onClose={() => setShowShare(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showStats && (
+        <StatsModal
+          movies={movies}
+          onClose={() => setShowStats(false)}
           darkMode={darkMode}
         />
       )}

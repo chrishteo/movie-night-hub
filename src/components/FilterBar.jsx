@@ -8,8 +8,21 @@ export default function FilterBar({
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
+  const input = darkMode ? 'bg-gray-700' : 'bg-gray-100'
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search movies..."
+          value={filters.search || ''}
+          onChange={(e) => onFilterChange('search', e.target.value)}
+          className={`px-3 py-1 pl-8 rounded text-sm ${input} ${border} border w-40`}
+        />
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+      </div>
+
       <select
         value={filters.genre}
         onChange={(e) => onFilterChange('genre', e.target.value)}

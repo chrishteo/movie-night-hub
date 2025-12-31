@@ -55,6 +55,13 @@ export function decodeShareData(encoded) {
 
 export function filterMovies(movies, filters, currentUser) {
   return movies.filter(m => {
+    // Search by title (case-insensitive)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      const titleMatch = m.title?.toLowerCase().includes(searchLower)
+      const directorMatch = m.director?.toLowerCase().includes(searchLower)
+      if (!titleMatch && !directorMatch) return false
+    }
     if (filters.view === 'mine' && m.added_by !== currentUser) return false
     if (filters.genre && m.genre !== filters.genre) return false
     if (filters.mood && m.mood !== filters.mood) return false

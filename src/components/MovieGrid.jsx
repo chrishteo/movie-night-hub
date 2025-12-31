@@ -6,6 +6,7 @@ export default function MovieGrid({
   onToggleFavorite,
   onEdit,
   onDelete,
+  onMovieClick,
   darkMode
 }) {
   if (movies.length === 0) {
@@ -26,6 +27,7 @@ export default function MovieGrid({
           onToggleFavorite={onToggleFavorite}
           onEdit={onEdit}
           onDelete={onDelete}
+          onClick={onMovieClick}
           darkMode={darkMode}
         />
       ))}
