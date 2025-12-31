@@ -3,6 +3,44 @@ const MOODS = ['Feel-good', 'Intense', 'Thought-provoking', 'Scary', 'Romantic',
 const STREAMING = ['Netflix', 'Amazon Prime', 'Disney+', 'HBO Max', 'Hulu', 'Apple TV+', 'Paramount+', 'Peacock', 'Other'];
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const OMDB_API_KEY = process.env.OMDB_API_KEY;
+
+// Fetch IMDB and Rotten Tomatoes ratings from OMDB
+async function getOMDBRatings(title, year) {
+  if (!OMDB_API_KEY) return { imdb_rating: null, rotten_tomatoes: null };
+
+  try {
+    const query = encodeURIComponent(title);
+    const yearParam = year ? `&y=${year}` : '';
+    const response = await fetch(
+      `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${query}${yearParam}`
+    );
+
+    if (!response.ok) return { imdb_rating: null, rotten_tomatoes: null };
+
+    const data = await response.json();
+    if (data.Response === 'False') return { imdb_rating: null, rotten_tomatoes: null };
+
+    // Extract IMDB rating
+    const imdb_rating = data.imdbRating && data.imdbRating !== 'N/A'
+      ? parseFloat(data.imdbRating)
+      : null;
+
+    // Extract Rotten Tomatoes from Ratings array
+    let rotten_tomatoes = null;
+    if (data.Ratings) {
+      const rt = data.Ratings.find(r => r.Source === 'Rotten Tomatoes');
+      if (rt && rt.Value) {
+        rotten_tomatoes = parseInt(rt.Value.replace('%', ''));
+      }
+    }
+
+    return { imdb_rating, rotten_tomatoes };
+  } catch (err) {
+    console.error('OMDB error:', err);
+    return { imdb_rating: null, rotten_tomatoes: null };
+  }
+}
 
 // Fetch full movie data from TMDB (poster, rating, trailer, cast)
 async function getTMDBData(title, year) {
@@ -149,10 +187,14 @@ Important: Return ONLY the JSON object, no other text or explanation.`
     try {
       const movieInfo = JSON.parse(jsonMatch[0]);
 
-      // Get full movie data from TMDB (poster, rating, trailer, cast)
+      // Get full movie data from TMDB and OMDB in parallel
       const movieTitle = movieInfo.title || title;
       const movieYear = typeof movieInfo.year === 'number' ? movieInfo.year : parseInt(movieInfo.year) || null;
-      const tmdbData = await getTMDBData(movieTitle, movieYear);
+
+      const [tmdbData, omdbData] = await Promise.all([
+        getTMDBData(movieTitle, movieYear),
+        getOMDBRatings(movieTitle, movieYear)
+      ]);
 
       // Validate and sanitize the response
       const result = {
@@ -167,7 +209,9 @@ Important: Return ONLY the JSON object, no other text or explanation.`
           : [],
         trailer_url: tmdbData.trailer_url,
         tmdb_rating: tmdbData.tmdb_rating,
-        cast: tmdbData.cast
+        cast: tmdbData.cast,
+        imdb_rating: omdbData.imdb_rating,
+        rotten_tomatoes: omdbData.rotten_tomatoes
       };
 
       return res.status(200).json(result);

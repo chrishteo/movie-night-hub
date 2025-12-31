@@ -63,7 +63,9 @@ export async function addMovie(movie) {
       added_by: movie.added_by,
       trailer_url: movie.trailer_url || null,
       tmdb_rating: movie.tmdb_rating || null,
-      "cast": movie.cast || []
+      "cast": movie.cast || [],
+      imdb_rating: movie.imdb_rating || null,
+      rotten_tomatoes: movie.rotten_tomatoes || null
     }])
     .select()
     .single()

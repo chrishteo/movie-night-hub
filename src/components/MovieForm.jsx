@@ -25,7 +25,9 @@ export default function MovieForm({
     favorite: movie?.favorite || false,
     trailer_url: movie?.trailer_url || '',
     tmdb_rating: movie?.tmdb_rating || null,
-    cast: movie?.cast || []
+    cast: movie?.cast || [],
+    imdb_rating: movie?.imdb_rating || null,
+    rotten_tomatoes: movie?.rotten_tomatoes || null
   })
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
@@ -49,7 +51,9 @@ export default function MovieForm({
         streaming: info.streaming?.length ? info.streaming : prev.streaming,
         trailer_url: info.trailer_url || prev.trailer_url,
         tmdb_rating: info.tmdb_rating || prev.tmdb_rating,
-        cast: info.cast?.length ? info.cast : prev.cast
+        cast: info.cast?.length ? info.cast : prev.cast,
+        imdb_rating: info.imdb_rating || prev.imdb_rating,
+        rotten_tomatoes: info.rotten_tomatoes || prev.rotten_tomatoes
       }))
     } catch (err) {
       setSearchError(err.message || 'Could not find movie info.')

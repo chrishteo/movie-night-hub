@@ -89,9 +89,18 @@ export default function MovieCard({
                 </span>
               ))}
             </div>
-            {movie.tmdb_rating && (
-              <span className="px-1 py-0.5 bg-yellow-600 rounded text-xs font-bold">
+            {movie.imdb_rating ? (
+              <span className="px-1 py-0.5 bg-amber-500 rounded text-xs font-bold" title="IMDB">
+                {movie.imdb_rating.toFixed(1)}
+              </span>
+            ) : movie.tmdb_rating ? (
+              <span className="px-1 py-0.5 bg-yellow-600 rounded text-xs font-bold" title="TMDB">
                 {movie.tmdb_rating.toFixed(1)}
+              </span>
+            ) : null}
+            {movie.rotten_tomatoes && (
+              <span className={`px-1 py-0.5 rounded text-xs font-bold ${movie.rotten_tomatoes >= 60 ? 'bg-red-500' : 'bg-green-600'}`} title="Rotten Tomatoes">
+                {movie.rotten_tomatoes}%
               </span>
             )}
           </div>

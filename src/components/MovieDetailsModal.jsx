@@ -94,7 +94,23 @@ export default function MovieDetailsModal({
               <div className="flex items-center gap-2">
                 <span className={textMuted}>TMDB:</span>
                 <span className="px-2 py-0.5 bg-yellow-600 rounded text-sm font-bold">
-                  {movie.tmdb_rating.toFixed(1)}/10
+                  {movie.tmdb_rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+            {movie.imdb_rating && (
+              <div className="flex items-center gap-2">
+                <span className={textMuted}>IMDB:</span>
+                <span className="px-2 py-0.5 bg-amber-500 rounded text-sm font-bold">
+                  {movie.imdb_rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+            {movie.rotten_tomatoes && (
+              <div className="flex items-center gap-2">
+                <span className={textMuted}>RT:</span>
+                <span className={`px-2 py-0.5 rounded text-sm font-bold ${movie.rotten_tomatoes >= 60 ? 'bg-red-500' : 'bg-green-600'}`}>
+                  {movie.rotten_tomatoes}%
                 </span>
               </div>
             )}

@@ -29,7 +29,9 @@ export async function searchMovie(title) {
       : [],
     trailer_url: data.trailer_url || '',
     tmdb_rating: data.tmdb_rating || null,
-    cast: Array.isArray(data.cast) ? data.cast : []
+    cast: Array.isArray(data.cast) ? data.cast : [],
+    imdb_rating: data.imdb_rating || null,
+    rotten_tomatoes: data.rotten_tomatoes || null
   }
 }
 
