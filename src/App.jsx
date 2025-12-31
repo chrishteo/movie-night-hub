@@ -3,6 +3,7 @@ import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
 import { filterMovies, sortMovies } from './utils/helpers'
+import { useToast } from './components/Toast'
 
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
@@ -20,8 +21,11 @@ import StatsModal from './components/StatsModal'
 import Confetti from './components/Confetti'
 import WinnerOverlay from './components/WinnerOverlay'
 import BottomNav from './components/BottomNav'
+import ConfirmDialog from './components/ConfirmDialog'
 
 export default function App() {
+  const { addToast } = useToast()
+
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('movienight-darkmode')
@@ -77,6 +81,9 @@ export default function App() {
   const [showShare, setShowShare] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
+  const [bulkSelectMode, setBulkSelectMode] = useState(false)
+  const [selectedMovies, setSelectedMovies] = useState(new Set())
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -123,8 +130,9 @@ export default function App() {
         added_by: currentUser
       })
       setShowAddMovie(false)
+      addToast('Movie added successfully!', 'success')
     } catch (err) {
-      console.error('Failed to add movie:', err)
+      addToast('Failed to add movie: ' + err.message, 'error')
     }
   }
 
@@ -134,19 +142,97 @@ export default function App() {
     try {
       await updateMovie(editingMovie.id, movieData)
       setEditingMovie(null)
+      addToast('Movie updated!', 'success')
     } catch (err) {
-      console.error('Failed to update movie:', err)
+      addToast('Failed to update movie: ' + err.message, 'error')
     }
   }
 
-  const handleDeleteMovie = async (id) => {
-    if (!confirm('Delete this movie?')) return
+  const handleDeleteMovie = (id) => {
+    const movie = movies.find(m => m.id === id)
+    setDeleteConfirm({
+      isOpen: true,
+      movieId: id,
+      movieTitle: movie?.title || 'this movie'
+    })
+  }
+
+  const confirmDeleteMovie = async () => {
+    const id = deleteConfirm.movieId
+    setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })
+
+    // Handle bulk delete
+    if (id === 'bulk') {
+      await confirmBulkDelete()
+      return
+    }
 
     try {
       await deleteMovie(id)
+      addToast('Movie deleted', 'success')
     } catch (err) {
-      console.error('Failed to delete movie:', err)
+      addToast('Failed to delete movie: ' + err.message, 'error')
     }
+  }
+
+  const handleRateMovie = async (id, rating) => {
+    try {
+      await updateMovie(id, { rating })
+      addToast(`Rated ${rating} stars`, 'success')
+    } catch (err) {
+      addToast('Failed to rate movie', 'error')
+    }
+  }
+
+  // Bulk action handlers
+  const toggleMovieSelection = (id) => {
+    setSelectedMovies(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const selectAllMovies = () => {
+    setSelectedMovies(new Set(filteredMovies.map(m => m.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedMovies(new Set())
+    setBulkSelectMode(false)
+  }
+
+  const handleBulkMarkWatched = async () => {
+    const count = selectedMovies.size
+    for (const id of selectedMovies) {
+      await toggleWatched(id)
+    }
+    addToast(`Marked ${count} movies as watched`, 'success')
+    clearSelection()
+  }
+
+  const handleBulkDelete = async () => {
+    const count = selectedMovies.size
+    setDeleteConfirm({
+      isOpen: true,
+      movieId: 'bulk',
+      movieTitle: `${count} selected movies`
+    })
+  }
+
+  const confirmBulkDelete = async () => {
+    const count = selectedMovies.size
+    setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })
+
+    for (const id of selectedMovies) {
+      await deleteMovie(id)
+    }
+    addToast(`Deleted ${count} movies`, 'success')
+    clearSelection()
   }
 
   const handleMoviePicked = (movie) => {
@@ -223,6 +309,39 @@ export default function App() {
         </div>
       )}
 
+      {/* Bulk Action Bar */}
+      {bulkSelectMode && (
+        <div className={`${card} border ${border} rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap`}>
+          <span className="font-medium">{selectedMovies.size} selected</span>
+          <button
+            onClick={selectAllMovies}
+            className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white"
+          >
+            Select All ({filteredMovies.length})
+          </button>
+          <button
+            onClick={handleBulkMarkWatched}
+            disabled={selectedMovies.size === 0}
+            className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+          >
+            ✓ Mark Watched
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={selectedMovies.size === 0}
+            className="px-3 py-1.5 rounded text-sm bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+          >
+            🗑️ Delete
+          </button>
+          <button
+            onClick={clearSelection}
+            className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white ml-auto"
+          >
+            ✕ Cancel
+          </button>
+        </div>
+      )}
+
       {/* Action Buttons - Desktop only */}
       <div className="hidden md:flex flex-wrap gap-2 mb-3">
         <button
@@ -244,6 +363,16 @@ export default function App() {
           }`}
         >
           Mine
+        </button>
+        <button
+          onClick={() => setBulkSelectMode(!bulkSelectMode)}
+          className={`px-3 py-1.5 rounded text-sm ${
+            bulkSelectMode
+              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+              : card
+          }`}
+        >
+          ☑️ Select
         </button>
         <button
           onClick={() => setShowAddMovie(true)}
@@ -318,10 +447,16 @@ export default function App() {
           Mine
         </button>
         <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-4 py-2 rounded text-sm ${showFilters ? 'bg-purple-600 text-white' : card}`}
+          onClick={() => setBulkSelectMode(!bulkSelectMode)}
+          className={`px-3 py-2 rounded text-sm ${bulkSelectMode ? 'bg-purple-600 text-white' : card}`}
         >
-          🔽 Filters
+          ☑️
+        </button>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-3 py-2 rounded text-sm ${showFilters ? 'bg-purple-600 text-white' : card}`}
+        >
+          🔽
         </button>
       </div>
 
@@ -342,8 +477,12 @@ export default function App() {
         onEdit={setEditingMovie}
         onDelete={handleDeleteMovie}
         onMovieClick={setSelectedMovie}
+        onRate={handleRateMovie}
         darkMode={darkMode}
         loading={moviesLoading}
+        bulkSelectMode={bulkSelectMode}
+        selectedMovies={selectedMovies}
+        onToggleSelect={toggleMovieSelection}
       />
 
       {/* Modals */}
@@ -461,6 +600,19 @@ export default function App() {
         onVote={() => setShowVoting(true)}
         onShowRecs={() => setShowRecs(true)}
         onShowStats={() => setShowStats(true)}
+        darkMode={darkMode}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Movie"
+        message={`Are you sure you want to delete "${deleteConfirm.movieTitle}"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmStyle="danger"
+        onConfirm={confirmDeleteMovie}
+        onCancel={() => setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })}
         darkMode={darkMode}
       />
     </div>

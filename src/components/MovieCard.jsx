@@ -16,7 +16,11 @@ export default function MovieCard({
   onEdit,
   onDelete,
   onClick,
-  darkMode
+  onRate,
+  darkMode,
+  bulkSelectMode,
+  isSelected,
+  onToggleSelect
 }) {
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
@@ -99,26 +103,33 @@ export default function MovieCard({
       </div>
 
       <div
-        className={`${card} border ${border} flex flex-col cursor-pointer hover:border-purple-500 transition-colors relative`}
+        className={`${card} border ${border} flex flex-col cursor-pointer hover:border-purple-500 transition-colors relative ${isSelected ? 'ring-2 ring-purple-500' : ''}`}
         style={swipeStyle}
-        onClick={() => onClick(movie)}
+        onClick={() => bulkSelectMode ? onToggleSelect(movie.id) : onClick(movie)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
       <div className="flex">
-        {movie.poster ? (
-          <img
-            src={movie.poster}
-            alt={movie.title}
-            className="w-20 h-28 object-cover flex-shrink-0"
-            onError={(e) => { e.target.style.display = 'none' }}
-          />
-        ) : (
-          <div className="w-20 h-28 bg-gray-700 flex items-center justify-center text-2xl flex-shrink-0">
-            🎬
-          </div>
-        )}
+        <div className="relative flex-shrink-0">
+          {movie.poster ? (
+            <img
+              src={movie.poster}
+              alt={movie.title}
+              className="w-20 h-28 object-cover"
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+          ) : (
+            <div className="w-20 h-28 bg-gray-700 flex items-center justify-center text-2xl">
+              🎬
+            </div>
+          )}
+          {bulkSelectMode && (
+            <div className={`absolute top-1 left-1 w-6 h-6 rounded border-2 flex items-center justify-center ${isSelected ? 'bg-purple-600 border-purple-600' : 'bg-black/50 border-white'}`}>
+              {isSelected && <span className="text-white text-sm">✓</span>}
+            </div>
+          )}
+        </div>
         <div className="p-2 flex-1 min-w-0">
           <div className="flex justify-between items-start gap-1">
             <h3 className="font-bold text-sm truncate">{movie.title}</h3>
@@ -162,12 +173,13 @@ export default function MovieCard({
           <div className="flex items-center gap-2 mt-1">
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map(s => (
-                <span
+                <button
                   key={s}
-                  className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
+                  onClick={(e) => { e.stopPropagation(); onRate && onRate(movie.id, s); }}
+                  className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'} hover:text-yellow-300 hover:scale-125 transition-transform`}
                 >
                   ★
-                </span>
+                </button>
               ))}
             </div>
             {movie.imdb_rating ? (

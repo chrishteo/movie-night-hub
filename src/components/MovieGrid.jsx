@@ -8,8 +8,12 @@ export default function MovieGrid({
   onEdit,
   onDelete,
   onMovieClick,
+  onRate,
   darkMode,
-  loading
+  loading,
+  bulkSelectMode,
+  selectedMovies,
+  onToggleSelect
 }) {
   // Show skeleton loaders while loading
   if (loading) {
@@ -41,7 +45,11 @@ export default function MovieGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onClick={onMovieClick}
+          onRate={onRate}
           darkMode={darkMode}
+          bulkSelectMode={bulkSelectMode}
+          isSelected={selectedMovies?.has(movie.id)}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </div>
