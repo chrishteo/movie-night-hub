@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { STREAMING_COLORS } from '../utils/constants'
+import { Avatar } from './AvatarPicker'
 
 function StreamingBadge({ service }) {
   return (
@@ -11,6 +12,7 @@ function StreamingBadge({ service }) {
 
 export default function MovieCard({
   movie,
+  users,
   onToggleWatched,
   onToggleFavorite,
   onEdit,
@@ -22,6 +24,8 @@ export default function MovieCard({
   isSelected,
   onToggleSelect
 }) {
+  // Find user who added this movie
+  const addedByUser = users?.find(u => u.name === movie.added_by)
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
@@ -207,7 +211,10 @@ export default function MovieCard({
         </div>
       )}
       <div className="flex items-center justify-between mt-auto p-2 pt-1">
-        <span className="text-xs opacity-50">{movie.added_by}</span>
+        <div className="flex items-center gap-1">
+          <Avatar avatar={addedByUser?.avatar} size="sm" />
+          <span className="text-xs opacity-50">{movie.added_by}</span>
+        </div>
         <button
           onClick={handleWatchedClick}
           className={`px-2 py-0.5 rounded text-xs ${

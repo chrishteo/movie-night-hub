@@ -12,10 +12,22 @@ export async function getUsers() {
   return data
 }
 
-export async function addUser(name) {
+export async function addUser(name, avatar = '😊') {
   const { data, error } = await supabase
     .from('users')
-    .insert([{ name }])
+    .insert([{ name, avatar }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateUser(id, updates) {
+  const { data, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', id)
     .select()
     .single()
 

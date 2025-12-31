@@ -3,6 +3,7 @@ import SkeletonCard from './SkeletonCard'
 
 export default function MovieGrid({
   movies,
+  users,
   onToggleWatched,
   onToggleFavorite,
   onEdit,
@@ -40,6 +41,7 @@ export default function MovieGrid({
         <MovieCard
           key={movie.id}
           movie={movie}
+          users={users}
           onToggleWatched={onToggleWatched}
           onToggleFavorite={onToggleFavorite}
           onEdit={onEdit}

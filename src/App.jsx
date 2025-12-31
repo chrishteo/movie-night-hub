@@ -49,6 +49,7 @@ export default function App() {
     loading: usersLoading,
     selectUser,
     addUser,
+    updateUser,
     deleteUser
   } = useUsers()
 
@@ -286,6 +287,7 @@ export default function App() {
         onUserChange={selectUser}
         onAddUser={() => setShowAddUser(true)}
         onDeleteUser={deleteUser}
+        onUpdateUser={updateUser}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
       />
@@ -472,6 +474,7 @@ export default function App() {
       {/* Movie Grid */}
       <MovieGrid
         movies={filteredMovies}
+        users={users}
         onToggleWatched={toggleWatched}
         onToggleFavorite={toggleFavorite}
         onEdit={setEditingMovie}

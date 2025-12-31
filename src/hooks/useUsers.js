@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getUsers, addUser as addUserDb, deleteUser as deleteUserDb, subscribeToUsers } from '../lib/database'
+import { getUsers, addUser as addUserDb, updateUser as updateUserDb, deleteUser as deleteUserDb, subscribeToUsers } from '../lib/database'
 
 export function useUsers() {
   const [users, setUsers] = useState([])
@@ -52,11 +52,22 @@ export function useUsers() {
     localStorage.setItem('movienight-currentuser', userName)
   }, [])
 
-  const addUser = useCallback(async (name) => {
+  const addUser = useCallback(async (name, avatar = '😊') => {
     try {
-      const newUser = await addUserDb(name)
+      const newUser = await addUserDb(name, avatar)
       setUsers(prev => [...prev, newUser])
       return newUser
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [])
+
+  const updateUser = useCallback(async (id, updates) => {
+    try {
+      const updatedUser = await updateUserDb(id, updates)
+      setUsers(prev => prev.map(u => u.id === id ? updatedUser : u))
+      return updatedUser
     } catch (err) {
       setError(err.message)
       throw err
@@ -88,6 +99,7 @@ export function useUsers() {
     error,
     selectUser,
     addUser,
+    updateUser,
     deleteUser,
     refetch: fetchUsers
   }
