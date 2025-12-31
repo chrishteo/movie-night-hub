@@ -22,7 +22,10 @@ export default function MovieForm({
     notes: movie?.notes || '',
     watched: movie?.watched || false,
     watched_at: movie?.watched_at || null,
-    favorite: movie?.favorite || false
+    favorite: movie?.favorite || false,
+    trailer_url: movie?.trailer_url || '',
+    tmdb_rating: movie?.tmdb_rating || null,
+    cast: movie?.cast || []
   })
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
@@ -43,7 +46,10 @@ export default function MovieForm({
         genre: info.genre || prev.genre,
         mood: info.mood || prev.mood,
         poster: info.poster || prev.poster,
-        streaming: info.streaming?.length ? info.streaming : prev.streaming
+        streaming: info.streaming?.length ? info.streaming : prev.streaming,
+        trailer_url: info.trailer_url || prev.trailer_url,
+        tmdb_rating: info.tmdb_rating || prev.tmdb_rating,
+        cast: info.cast?.length ? info.cast : prev.cast
       }))
     } catch (err) {
       setSearchError(err.message || 'Could not find movie info.')
