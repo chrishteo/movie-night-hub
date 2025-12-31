@@ -50,7 +50,12 @@ export function useVotes() {
 
   const castVote = useCallback(async (movieId, userName, vote) => {
     try {
-      await castVoteDb(movieId, userName, vote)
+      const newVote = await castVoteDb(movieId, userName, vote)
+      // Update local state immediately
+      setVotes(prev => [
+        ...prev.filter(v => !(v.movie_id === movieId && v.user_name === userName)),
+        newVote
+      ])
     } catch (err) {
       setError(err.message)
       throw err
