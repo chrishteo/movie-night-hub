@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useToast } from './Toast'
 
 export default function TrendingMovies({ onAddMovie, existingMovies, currentUser, onClose, darkMode }) {
+  const { addToast } = useToast()
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -59,6 +61,7 @@ export default function TrendingMovies({ onAddMovie, existingMovies, currentUser
       })
     } catch (err) {
       console.error('Error adding movie:', err)
+      addToast('Failed to add movie', 'error')
     } finally {
       setAddingId(null)
     }

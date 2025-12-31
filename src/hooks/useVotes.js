@@ -30,15 +30,15 @@ export function useVotes() {
 
     // Subscribe to real-time updates
     const subscription = subscribeToVotes((payload) => {
-      if (payload.eventType === 'INSERT') {
+      if (payload.eventType === 'INSERT' && payload.new) {
         setVotes(prev => [...prev.filter(v =>
           !(v.movie_id === payload.new.movie_id && v.user_name === payload.new.user_name)
         ), payload.new])
-      } else if (payload.eventType === 'UPDATE') {
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
         setVotes(prev => prev.map(v =>
           v.id === payload.new.id ? payload.new : v
         ))
-      } else if (payload.eventType === 'DELETE') {
+      } else if (payload.eventType === 'DELETE' && payload.old?.id) {
         setVotes(prev => prev.filter(v => v.id !== payload.old.id))
       }
     })

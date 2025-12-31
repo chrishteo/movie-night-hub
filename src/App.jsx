@@ -217,10 +217,20 @@ export default function App() {
 
   const handleBulkMarkWatched = async () => {
     const count = selectedMovies.size
+    let failed = 0
     for (const id of selectedMovies) {
-      await toggleWatched(id)
+      try {
+        await toggleWatched(id)
+      } catch (err) {
+        console.error('Error marking movie watched:', err)
+        failed++
+      }
     }
-    addToast(`Marked ${count} movies as watched`, 'success')
+    if (failed > 0) {
+      addToast(`Marked ${count - failed} movies, ${failed} failed`, 'error')
+    } else {
+      addToast(`Marked ${count} movies as watched`, 'success')
+    }
     clearSelection()
   }
 
@@ -237,10 +247,20 @@ export default function App() {
     const count = selectedMovies.size
     setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })
 
+    let failed = 0
     for (const id of selectedMovies) {
-      await deleteMovie(id)
+      try {
+        await deleteMovie(id)
+      } catch (err) {
+        console.error('Error deleting movie:', err)
+        failed++
+      }
     }
-    addToast(`Deleted ${count} movies`, 'success')
+    if (failed > 0) {
+      addToast(`Deleted ${count - failed} movies, ${failed} failed`, 'error')
+    } else {
+      addToast(`Deleted ${count} movies`, 'success')
+    }
     clearSelection()
   }
 

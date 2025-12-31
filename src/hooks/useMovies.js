@@ -33,11 +33,11 @@ export function useMovies() {
 
     // Subscribe to real-time updates
     const subscription = subscribeToMovies((payload) => {
-      if (payload.eventType === 'INSERT') {
+      if (payload.eventType === 'INSERT' && payload.new) {
         setMovies(prev => [payload.new, ...prev])
-      } else if (payload.eventType === 'UPDATE') {
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
         setMovies(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
-      } else if (payload.eventType === 'DELETE') {
+      } else if (payload.eventType === 'DELETE' && payload.old?.id) {
         setMovies(prev => prev.filter(m => m.id !== payload.old.id))
       }
     })

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useToast } from './Toast'
 import { STREAMING_COLORS } from '../utils/constants'
 import { formatDate } from '../utils/helpers'
 
@@ -21,8 +22,10 @@ export default function MovieDetailsModal({
   currentUser,
   darkMode
 }) {
+  const { addToast } = useToast()
   const [similarMovies, setSimilarMovies] = useState([])
   const [loadingSimilar, setLoadingSimilar] = useState(false)
+  const [similarError, setSimilarError] = useState(null)
   const [addingId, setAddingId] = useState(null)
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function MovieDetailsModal({
 
   const fetchSimilarMovies = async () => {
     setLoadingSimilar(true)
+    setSimilarError(null)
     try {
       const response = await fetch('/api/similar', {
         method: 'POST',
@@ -42,9 +46,13 @@ export default function MovieDetailsModal({
       if (response.ok) {
         const data = await response.json()
         setSimilarMovies(data.similar || [])
+      } else {
+        setSimilarError('Failed to load similar movies')
       }
     } catch (err) {
       console.error('Error fetching similar movies:', err)
+      setSimilarError('Failed to load similar movies')
+      addToast('Failed to load similar movies', 'error')
     } finally {
       setLoadingSimilar(false)
     }
@@ -69,6 +77,7 @@ export default function MovieDetailsModal({
       }
     } catch (err) {
       console.error('Error adding similar movie:', err)
+      addToast('Failed to add movie', 'error')
     } finally {
       setAddingId(null)
     }
@@ -262,6 +271,16 @@ export default function MovieDetailsModal({
             {loadingSimilar ? (
               <div className="flex justify-center py-4">
                 <span className="animate-spin text-2xl">🎬</span>
+              </div>
+            ) : similarError ? (
+              <div className="flex flex-col items-center py-4">
+                <p className={`text-sm ${textMuted} mb-2`}>{similarError}</p>
+                <button
+                  onClick={fetchSimilarMovies}
+                  className="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                >
+                  Retry
+                </button>
               </div>
             ) : similarMovies.length > 0 ? (
               <div className="flex gap-3 overflow-x-auto pb-2">

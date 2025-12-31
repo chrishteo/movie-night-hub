@@ -35,9 +35,9 @@ export function useUsers() {
 
     // Subscribe to real-time updates
     const subscription = subscribeToUsers((payload) => {
-      if (payload.eventType === 'INSERT') {
+      if (payload.eventType === 'INSERT' && payload.new) {
         setUsers(prev => [...prev, payload.new])
-      } else if (payload.eventType === 'DELETE') {
+      } else if (payload.eventType === 'DELETE' && payload.old?.id) {
         setUsers(prev => prev.filter(u => u.id !== payload.old.id))
       }
     })

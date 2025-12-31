@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useToast } from './Toast'
 import {
   getCollections,
   createCollection,
@@ -22,8 +23,10 @@ const COLLECTION_COLORS = {
 const COLLECTION_EMOJIS = ['📁', '🎬', '🍿', '🎃', '❤️', '🌙', '☀️', '🎄', '🎉', '👻', '🦸', '🔥', '💫', '🌟']
 
 export default function Collections({ movies, onClose, darkMode }) {
+  const { addToast } = useToast()
   const [collections, setCollections] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selectedCollection, setSelectedCollection] = useState(null)
   const [collectionMovieIds, setCollectionMovieIds] = useState([])
   const [showCreate, setShowCreate] = useState(false)
@@ -47,10 +50,13 @@ export default function Collections({ movies, onClose, darkMode }) {
 
   const fetchCollections = async () => {
     try {
+      setError(null)
       const data = await getCollections()
       setCollections(data || [])
     } catch (err) {
       console.error('Error fetching collections:', err)
+      setError('Failed to load collections')
+      addToast('Failed to load collections', 'error')
     } finally {
       setLoading(false)
     }
@@ -62,6 +68,7 @@ export default function Collections({ movies, onClose, darkMode }) {
       setCollectionMovieIds(movieIds)
     } catch (err) {
       console.error('Error fetching collection movies:', err)
+      addToast('Failed to load collection movies', 'error')
     }
   }
 
@@ -76,6 +83,7 @@ export default function Collections({ movies, onClose, darkMode }) {
       setShowCreate(false)
     } catch (err) {
       console.error('Error creating collection:', err)
+      addToast('Failed to create collection', 'error')
     }
   }
 
@@ -89,6 +97,7 @@ export default function Collections({ movies, onClose, darkMode }) {
       }
     } catch (err) {
       console.error('Error deleting collection:', err)
+      addToast('Failed to delete collection', 'error')
     }
   }
 
@@ -104,6 +113,7 @@ export default function Collections({ movies, onClose, darkMode }) {
       }
     } catch (err) {
       console.error('Error toggling movie:', err)
+      addToast('Failed to update collection', 'error')
     }
   }
 
@@ -182,6 +192,16 @@ export default function Collections({ movies, onClose, darkMode }) {
             {loading ? (
               <div className="text-center py-4">
                 <span className="animate-spin text-2xl">🎬</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-red-400 mb-2">{error}</p>
+                <button
+                  onClick={fetchCollections}
+                  className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                >
+                  Retry
+                </button>
               </div>
             ) : collections.length === 0 ? (
               <p className="text-sm opacity-50 text-center">No collections yet</p>

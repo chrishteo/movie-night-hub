@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useToast } from './Toast'
 import { getMovieNights, createMovieNight, deleteMovieNight } from '../lib/database'
 
 export default function MovieNightScheduler({ movies, onClose, darkMode }) {
+  const { addToast } = useToast()
   const [scheduledNights, setScheduledNights] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const [selectedMovieId, setSelectedMovieId] = useState('')
   const [selectedDate, setSelectedDate] = useState('')
@@ -19,10 +22,14 @@ export default function MovieNightScheduler({ movies, onClose, darkMode }) {
 
   const fetchScheduledNights = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const data = await getMovieNights()
       setScheduledNights(data || [])
     } catch (err) {
       console.error('Error fetching movie nights:', err)
+      setError('Failed to load scheduled nights')
+      addToast('Failed to load scheduled nights', 'error')
     } finally {
       setLoading(false)
     }
@@ -44,6 +51,7 @@ export default function MovieNightScheduler({ movies, onClose, darkMode }) {
       setShowAdd(false)
     } catch (err) {
       console.error('Error scheduling movie night:', err)
+      addToast('Failed to schedule movie night', 'error')
     }
   }
 
@@ -53,6 +61,7 @@ export default function MovieNightScheduler({ movies, onClose, darkMode }) {
       setScheduledNights(prev => prev.filter(n => n.id !== id))
     } catch (err) {
       console.error('Error deleting movie night:', err)
+      addToast('Failed to cancel movie night', 'error')
     }
   }
 
@@ -164,6 +173,16 @@ export default function MovieNightScheduler({ movies, onClose, darkMode }) {
           {loading ? (
             <div className="text-center py-8">
               <span className="animate-spin text-3xl">🎬</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-red-400 mb-3">{error}</p>
+              <button
+                onClick={fetchScheduledNights}
+                className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Retry
+              </button>
             </div>
           ) : (
             <>
