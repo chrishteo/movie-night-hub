@@ -1,0 +1,379 @@
+import { useState, useEffect } from 'react'
+import { useMovies } from './hooks/useMovies'
+import { useUsers } from './hooks/useUsers'
+import { useVotes } from './hooks/useVotes'
+import { filterMovies, sortMovies } from './utils/helpers'
+
+import Header from './components/Header'
+import FilterBar from './components/FilterBar'
+import MovieGrid from './components/MovieGrid'
+import MovieForm from './components/MovieForm'
+import AddUserModal from './components/AddUserModal'
+import SpinWheel from './components/SpinWheel'
+import VotingModal from './components/VotingModal'
+import Recommendations from './components/Recommendations'
+import WatchHistory from './components/WatchHistory'
+import MovieOfTheWeek from './components/MovieOfTheWeek'
+import ShareModal from './components/ShareModal'
+import Confetti from './components/Confetti'
+import WinnerOverlay from './components/WinnerOverlay'
+
+export default function App() {
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('movienight-darkmode')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+
+  // Data hooks
+  const {
+    movies,
+    loading: moviesLoading,
+    addMovie,
+    updateMovie,
+    deleteMovie,
+    toggleWatched,
+    toggleFavorite
+  } = useMovies()
+
+  const {
+    users,
+    currentUser,
+    loading: usersLoading,
+    selectUser,
+    addUser
+  } = useUsers()
+
+  const {
+    votes,
+    castVote
+  } = useVotes()
+
+  // UI state
+  const [filters, setFilters] = useState({
+    view: 'all',
+    genre: '',
+    mood: '',
+    streaming: '',
+    watched: 'all',
+    favorites: false,
+    sortBy: 'created_at'
+  })
+
+  // Modal states
+  const [showAddMovie, setShowAddMovie] = useState(false)
+  const [editingMovie, setEditingMovie] = useState(null)
+  const [showAddUser, setShowAddUser] = useState(false)
+  const [showWheel, setShowWheel] = useState(false)
+  const [showVoting, setShowVoting] = useState(false)
+  const [showRecs, setShowRecs] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showMOTW, setShowMOTW] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+
+  // Effects state
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [winner, setWinner] = useState(null)
+  const [currentMOTW, setCurrentMOTW] = useState(null)
+
+  // Save dark mode preference
+  useEffect(() => {
+    localStorage.setItem('movienight-darkmode', JSON.stringify(darkMode))
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
+
+  // Filter and sort movies
+  const filteredMovies = sortMovies(
+    filterMovies(movies, filters, currentUser),
+    filters.sortBy
+  )
+
+  // Handlers
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleAddMovie = async (movieData) => {
+    try {
+      await addMovie({
+        ...movieData,
+        added_by: currentUser
+      })
+      setShowAddMovie(false)
+    } catch (err) {
+      console.error('Failed to add movie:', err)
+    }
+  }
+
+  const handleEditMovie = async (movieData) => {
+    if (!editingMovie) return
+
+    try {
+      await updateMovie(editingMovie.id, movieData)
+      setEditingMovie(null)
+    } catch (err) {
+      console.error('Failed to update movie:', err)
+    }
+  }
+
+  const handleDeleteMovie = async (id) => {
+    if (!confirm('Delete this movie?')) return
+
+    try {
+      await deleteMovie(id)
+    } catch (err) {
+      console.error('Failed to delete movie:', err)
+    }
+  }
+
+  const handleMoviePicked = (movie) => {
+    setShowConfetti(true)
+    setTimeout(() => setShowConfetti(false), 3000)
+  }
+
+  const handleMOTWPicked = (movie) => {
+    setCurrentMOTW(movie)
+    setShowConfetti(true)
+    setTimeout(() => setShowConfetti(false), 3000)
+  }
+
+  const handleWinnerDeclared = (movie) => {
+    setWinner(movie)
+    setShowVoting(false)
+    setShowConfetti(true)
+    setTimeout(() => {
+      setShowConfetti(false)
+      setWinner(null)
+    }, 5000)
+  }
+
+  // Loading state
+  if (moviesLoading || usersLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+        <div className="text-center">
+          <div className="animate-spin text-4xl mb-4">🎬</div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const bg = darkMode ? 'bg-gray-900' : 'bg-gray-100'
+  const text = darkMode ? 'text-white' : 'text-gray-900'
+  const card = darkMode ? 'bg-gray-800' : 'bg-white'
+  const border = darkMode ? 'border-gray-700' : 'border-gray-300'
+
+  return (
+    <div className={`min-h-screen ${bg} ${text} p-4 transition-colors relative`}>
+      {/* Effects */}
+      {showConfetti && <Confetti />}
+      {winner && <WinnerOverlay movie={winner} onClose={() => setWinner(null)} />}
+
+      {/* Header */}
+      <Header
+        users={users}
+        currentUser={currentUser}
+        onUserChange={selectUser}
+        onAddUser={() => setShowAddUser(true)}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(!darkMode)}
+      />
+
+      {/* Current Movie of the Week Banner */}
+      {currentMOTW && (
+        <div className={`${card} border ${border} rounded-lg p-3 mb-4 flex items-center gap-3`}>
+          <span className="text-2xl">🎬</span>
+          <div className="flex-1">
+            <p className="text-xs opacity-70">Movie of the Week</p>
+            <p className="font-bold">{currentMOTW.title}</p>
+          </div>
+          {currentMOTW.poster && (
+            <img
+              src={currentMOTW.poster}
+              alt=""
+              className="w-12 h-16 object-cover rounded"
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <button
+          onClick={() => handleFilterChange('view', 'all')}
+          className={`px-3 py-1.5 rounded text-sm ${
+            filters.view === 'all'
+              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+              : card
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => handleFilterChange('view', 'mine')}
+          className={`px-3 py-1.5 rounded text-sm ${
+            filters.view === 'mine'
+              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+              : card
+          }`}
+        >
+          Mine
+        </button>
+        <button
+          onClick={() => setShowAddMovie(true)}
+          className="px-3 py-1.5 rounded text-sm bg-purple-600 hover:bg-purple-700 text-white"
+        >
+          + Add
+        </button>
+        <button
+          onClick={() => setShowWheel(true)}
+          className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white"
+        >
+          🎡
+        </button>
+        <button
+          onClick={() => setShowVoting(true)}
+          className="px-3 py-1.5 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          🗳️
+        </button>
+        <button
+          onClick={() => setShowRecs(true)}
+          className="px-3 py-1.5 rounded text-sm bg-orange-600 hover:bg-orange-700 text-white"
+        >
+          💡
+        </button>
+        <button
+          onClick={() => setShowMOTW(true)}
+          className="px-3 py-1.5 rounded text-sm bg-yellow-600 hover:bg-yellow-700 text-white"
+        >
+          📅
+        </button>
+        <button
+          onClick={() => setShowHistory(true)}
+          className="px-3 py-1.5 rounded text-sm bg-pink-600 hover:bg-pink-700 text-white"
+        >
+          📜
+        </button>
+        <button
+          onClick={() => setShowShare(true)}
+          className="px-3 py-1.5 rounded text-sm bg-teal-600 hover:bg-teal-700 text-white"
+        >
+          🔗
+        </button>
+      </div>
+
+      {/* Filter Bar */}
+      <FilterBar
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        darkMode={darkMode}
+      />
+
+      {/* Movie Grid */}
+      <MovieGrid
+        movies={filteredMovies}
+        onToggleWatched={toggleWatched}
+        onToggleFavorite={toggleFavorite}
+        onEdit={setEditingMovie}
+        onDelete={handleDeleteMovie}
+        darkMode={darkMode}
+      />
+
+      {/* Modals */}
+      {showAddMovie && (
+        <MovieForm
+          movie={null}
+          onSave={handleAddMovie}
+          onClose={() => setShowAddMovie(false)}
+          title="Add Movie"
+          isEdit={false}
+          darkMode={darkMode}
+        />
+      )}
+
+      {editingMovie && (
+        <MovieForm
+          movie={editingMovie}
+          onSave={handleEditMovie}
+          onClose={() => setEditingMovie(null)}
+          title="Edit Movie"
+          isEdit={true}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showAddUser && (
+        <AddUserModal
+          onAdd={addUser}
+          onClose={() => setShowAddUser(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showWheel && (
+        <SpinWheel
+          movies={filteredMovies}
+          onClose={() => setShowWheel(false)}
+          onMoviePicked={handleMoviePicked}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showVoting && (
+        <VotingModal
+          movies={filteredMovies}
+          votes={votes}
+          users={users}
+          currentUser={currentUser}
+          onVote={castVote}
+          onDeclareWinner={handleWinnerDeclared}
+          onClose={() => setShowVoting(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showRecs && (
+        <Recommendations
+          movies={movies}
+          currentUser={currentUser}
+          onAddMovie={addMovie}
+          onClose={() => setShowRecs(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showHistory && (
+        <WatchHistory
+          movies={movies}
+          onClose={() => setShowHistory(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showMOTW && (
+        <MovieOfTheWeek
+          movies={movies}
+          currentUser={currentUser}
+          onPick={handleMOTWPicked}
+          onClose={() => setShowMOTW(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showShare && (
+        <ShareModal
+          movies={movies}
+          onClose={() => setShowShare(false)}
+          darkMode={darkMode}
+        />
+      )}
+    </div>
+  )
+}
