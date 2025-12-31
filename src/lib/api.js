@@ -26,7 +26,10 @@ export async function searchMovie(title) {
     poster: data.poster || '',
     streaming: Array.isArray(data.streaming)
       ? data.streaming.filter(s => STREAMING.includes(s))
-      : []
+      : [],
+    trailer_url: data.trailer_url || '',
+    tmdb_rating: data.tmdb_rating || null,
+    cast: Array.isArray(data.cast) ? data.cast : []
   }
 }
 
