@@ -40,16 +40,20 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'user',
-            content: `Search for information about the movie "${title}". Return ONLY a valid JSON object with these exact fields:
+            content: `Search for information about the movie "${title}". Find the TMDB (The Movie Database) page for this movie to get accurate details.
+
+Return ONLY a valid JSON object with these exact fields:
 {
   "title": "Official movie title",
   "director": "Director's full name",
   "year": 2020,
   "genre": "One genre from: ${GENRES.join(', ')}",
   "mood": "One mood from: ${MOODS.join(', ')}",
-  "poster": "URL to movie poster image (preferably from IMDb or TMDb)",
+  "poster": "TMDB poster URL in format https://image.tmdb.org/t/p/w500/POSTER_PATH.jpg",
   "streaming": ["Array of streaming services where currently available from: ${STREAMING.join(', ')}"]
 }
+
+For the poster, look for the TMDB poster_path and construct the full URL like: https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg
 
 Important: Return ONLY the JSON object, no other text or explanation.`
           }
