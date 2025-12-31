@@ -3,9 +3,22 @@ export default function Header({
   currentUser,
   onUserChange,
   onAddUser,
+  onDeleteUser,
   darkMode,
   onToggleDarkMode
 }) {
+  const currentUserObj = users.find(u => u.name === currentUser)
+
+  const handleDeleteUser = () => {
+    if (users.length <= 1) {
+      alert('Cannot delete the last user!')
+      return
+    }
+    if (confirm(`Delete user "${currentUser}"?`)) {
+      onDeleteUser(currentUserObj.id, currentUser)
+    }
+  }
+
   return (
     <header className="flex flex-wrap items-center justify-between mb-4 gap-3">
       <h1 className="text-xl font-bold">🎬 Movie Night Hub</h1>
@@ -28,6 +41,13 @@ export default function Header({
           className="text-xs text-purple-400 hover:text-purple-300"
         >
           + Person
+        </button>
+        <button
+          onClick={handleDeleteUser}
+          className="text-xs text-red-400 hover:text-red-300"
+          title="Delete current user"
+        >
+          - Person
         </button>
         <button
           onClick={onToggleDarkMode}

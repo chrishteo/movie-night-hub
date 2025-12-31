@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getUsers, addUser as addUserDb, subscribeToUsers } from '../lib/database'
+import { getUsers, addUser as addUserDb, deleteUser as deleteUserDb, subscribeToUsers } from '../lib/database'
 
 export function useUsers() {
   const [users, setUsers] = useState([])
@@ -55,12 +55,31 @@ export function useUsers() {
   const addUser = useCallback(async (name) => {
     try {
       const newUser = await addUserDb(name)
+      setUsers(prev => [...prev, newUser])
       return newUser
     } catch (err) {
       setError(err.message)
       throw err
     }
   }, [])
+
+  const deleteUser = useCallback(async (id, userName) => {
+    try {
+      await deleteUserDb(id)
+      setUsers(prev => prev.filter(u => u.id !== id))
+      // If deleting current user, switch to first remaining user
+      if (currentUser === userName) {
+        const remaining = users.filter(u => u.id !== id)
+        if (remaining.length > 0) {
+          setCurrentUser(remaining[0].name)
+          localStorage.setItem('movienight-currentuser', remaining[0].name)
+        }
+      }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [currentUser, users])
 
   return {
     users,
@@ -69,6 +88,7 @@ export function useUsers() {
     error,
     selectUser,
     addUser,
+    deleteUser,
     refetch: fetchUsers
   }
 }

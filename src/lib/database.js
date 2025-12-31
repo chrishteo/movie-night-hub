@@ -23,6 +23,15 @@ export async function addUser(name) {
   return data
 }
 
+export async function deleteUser(id) {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
 // ============ MOVIES ============
 
 export async function getMovies() {

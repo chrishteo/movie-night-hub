@@ -41,7 +41,8 @@ export default function App() {
     currentUser,
     loading: usersLoading,
     selectUser,
-    addUser
+    addUser,
+    deleteUser
   } = useUsers()
 
   const {
@@ -180,6 +181,7 @@ export default function App() {
         currentUser={currentUser}
         onUserChange={selectUser}
         onAddUser={() => setShowAddUser(true)}
+        onDeleteUser={deleteUser}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
       />
