@@ -40,9 +40,10 @@ export default function MovieCard({
             <div className="flex gap-0.5 flex-shrink-0">
               <button
                 onClick={() => onToggleFavorite(movie.id)}
-                className={`text-xs ${movie.favorite ? 'text-red-400' : 'text-gray-500'} hover:text-red-300`}
+                className={`text-sm px-1 rounded ${movie.favorite ? 'text-red-500 bg-red-500/20' : 'text-gray-400'} hover:text-red-400`}
+                title={movie.favorite ? 'Remove from favorites' : 'Add to favorites'}
               >
-                ❤️
+                {movie.favorite ? '♥' : '♡'}
               </button>
               <button
                 onClick={() => onEdit(movie)}
