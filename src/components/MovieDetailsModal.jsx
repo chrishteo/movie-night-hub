@@ -29,15 +29,14 @@ export default function MovieDetailsModal({
         {/* Header with poster */}
         <div className="relative">
           {movie.poster ? (
-            <div className="relative h-64 overflow-hidden rounded-t-lg">
+            <div className="relative rounded-t-lg bg-black">
               <img
                 src={movie.poster}
                 alt={movie.title}
-                className="w-full h-full object-cover"
+                className="w-full max-h-80 object-contain mx-auto"
                 onError={(e) => { e.target.style.display = 'none' }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-4">
                 <h2 className="text-2xl font-bold text-white">{movie.title}</h2>
                 <p className="text-gray-300">
                   {movie.director} {movie.director && movie.year && '•'} {movie.year}
