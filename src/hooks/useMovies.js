@@ -50,7 +50,8 @@ export function useMovies() {
   const addMovie = useCallback(async (movie) => {
     try {
       const newMovie = await addMovieDb(movie)
-      // Real-time subscription will handle the update
+      // Update local state immediately
+      setMovies(prev => [newMovie, ...prev])
       return newMovie
     } catch (err) {
       setError(err.message)
@@ -61,6 +62,8 @@ export function useMovies() {
   const updateMovie = useCallback(async (id, updates) => {
     try {
       const updatedMovie = await updateMovieDb(id, updates)
+      // Update local state immediately
+      setMovies(prev => prev.map(m => m.id === id ? updatedMovie : m))
       return updatedMovie
     } catch (err) {
       setError(err.message)
@@ -71,6 +74,8 @@ export function useMovies() {
   const deleteMovie = useCallback(async (id) => {
     try {
       await deleteMovieDb(id)
+      // Update local state immediately
+      setMovies(prev => prev.filter(m => m.id !== id))
     } catch (err) {
       setError(err.message)
       throw err
@@ -82,7 +87,8 @@ export function useMovies() {
     if (!movie) return
 
     try {
-      await toggleMovieWatched(id, !movie.watched)
+      const updated = await toggleMovieWatched(id, !movie.watched)
+      setMovies(prev => prev.map(m => m.id === id ? updated : m))
     } catch (err) {
       setError(err.message)
       throw err
@@ -94,7 +100,8 @@ export function useMovies() {
     if (!movie) return
 
     try {
-      await toggleMovieFavorite(id, !movie.favorite)
+      const updated = await toggleMovieFavorite(id, !movie.favorite)
+      setMovies(prev => prev.map(m => m.id === id ? updated : m))
     } catch (err) {
       setError(err.message)
       throw err
