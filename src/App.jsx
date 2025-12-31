@@ -23,6 +23,8 @@ import WinnerOverlay from './components/WinnerOverlay'
 import BottomNav from './components/BottomNav'
 import ConfirmDialog from './components/ConfirmDialog'
 import TrendingMovies from './components/TrendingMovies'
+import Collections from './components/Collections'
+import MovieNightScheduler from './components/MovieNightScheduler'
 
 export default function App() {
   const { addToast } = useToast()
@@ -83,6 +85,8 @@ export default function App() {
   const [showShare, setShowShare] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
+  const [showCollections, setShowCollections] = useState(false)
+  const [showScheduler, setShowScheduler] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
   const [bulkSelectMode, setBulkSelectMode] = useState(false)
@@ -432,6 +436,18 @@ export default function App() {
         >
           🔥
         </button>
+        <button
+          onClick={() => setShowCollections(true)}
+          className="px-3 py-1.5 rounded text-sm bg-cyan-600 hover:bg-cyan-700 text-white"
+        >
+          📚
+        </button>
+        <button
+          onClick={() => setShowScheduler(true)}
+          className="px-3 py-1.5 rounded text-sm bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          📅
+        </button>
       </div>
 
       {/* Mobile Action Row */}
@@ -526,6 +542,9 @@ export default function App() {
           onEdit={setEditingMovie}
           onToggleWatched={toggleWatched}
           onToggleFavorite={toggleFavorite}
+          onAddMovie={handleAddMovie}
+          existingMovies={movies}
+          currentUser={currentUser}
           darkMode={darkMode}
         />
       )}
@@ -610,6 +629,22 @@ export default function App() {
           currentUser={currentUser}
           onAddMovie={handleAddMovie}
           onClose={() => setShowTrending(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showCollections && (
+        <Collections
+          movies={movies}
+          onClose={() => setShowCollections(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showScheduler && (
+        <MovieNightScheduler
+          movies={movies}
+          onClose={() => setShowScheduler(false)}
           darkMode={darkMode}
         />
       )}

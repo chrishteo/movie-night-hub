@@ -242,3 +242,127 @@ export function subscribeToMOTW(callback) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_of_the_week' }, callback)
     .subscribe()
 }
+
+// ============ COLLECTIONS ============
+
+export async function getCollections() {
+  const { data, error } = await supabase
+    .from('collections')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function createCollection(name, emoji = '📁', color = 'purple') {
+  const { data, error } = await supabase
+    .from('collections')
+    .insert([{ name, emoji, color }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateCollection(id, updates) {
+  const { data, error } = await supabase
+    .from('collections')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteCollection(id) {
+  const { error } = await supabase
+    .from('collections')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function getCollectionMovies(collectionId) {
+  const { data, error } = await supabase
+    .from('collection_movies')
+    .select('movie_id')
+    .eq('collection_id', collectionId)
+
+  if (error) throw error
+  return data.map(cm => cm.movie_id)
+}
+
+export async function addMovieToCollection(collectionId, movieId) {
+  const { data, error } = await supabase
+    .from('collection_movies')
+    .insert([{ collection_id: collectionId, movie_id: movieId }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeMovieFromCollection(collectionId, movieId) {
+  const { error } = await supabase
+    .from('collection_movies')
+    .delete()
+    .eq('collection_id', collectionId)
+    .eq('movie_id', movieId)
+
+  if (error) throw error
+}
+
+// ============ MOVIE NIGHTS ============
+
+export async function getMovieNights() {
+  const { data, error } = await supabase
+    .from('movie_nights')
+    .select('*')
+    .order('scheduled_date', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createMovieNight(movieId, movieTitle, scheduledDate, notes = '') {
+  const { data, error } = await supabase
+    .from('movie_nights')
+    .insert([{
+      movie_id: movieId,
+      movie_title: movieTitle,
+      scheduled_date: scheduledDate,
+      notes
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateMovieNight(id, updates) {
+  const { data, error } = await supabase
+    .from('movie_nights')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteMovieNight(id) {
+  const { error } = await supabase
+    .from('movie_nights')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}

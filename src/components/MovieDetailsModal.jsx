@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { STREAMING_COLORS } from '../utils/constants'
 import { formatDate } from '../utils/helpers'
 
@@ -15,8 +16,64 @@ export default function MovieDetailsModal({
   onEdit,
   onToggleWatched,
   onToggleFavorite,
+  onAddMovie,
+  existingMovies,
+  currentUser,
   darkMode
 }) {
+  const [similarMovies, setSimilarMovies] = useState([])
+  const [loadingSimilar, setLoadingSimilar] = useState(false)
+  const [addingId, setAddingId] = useState(null)
+
+  useEffect(() => {
+    if (movie?.title) {
+      fetchSimilarMovies()
+    }
+  }, [movie?.id])
+
+  const fetchSimilarMovies = async () => {
+    setLoadingSimilar(true)
+    try {
+      const response = await fetch('/api/similar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: movie.title, year: movie.year })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSimilarMovies(data.similar || [])
+      }
+    } catch (err) {
+      console.error('Error fetching similar movies:', err)
+    } finally {
+      setLoadingSimilar(false)
+    }
+  }
+
+  const isAlreadyAdded = (title) => {
+    return existingMovies?.some(m => m.title?.toLowerCase() === title?.toLowerCase())
+  }
+
+  const handleAddSimilar = async (similarMovie) => {
+    if (!onAddMovie) return
+    setAddingId(similarMovie.tmdb_id)
+    try {
+      const response = await fetch('/api/search-movie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: similarMovie.title })
+      })
+      if (response.ok) {
+        const movieData = await response.json()
+        await onAddMovie({ ...movieData, added_by: currentUser })
+      }
+    } catch (err) {
+      console.error('Error adding similar movie:', err)
+    } finally {
+      setAddingId(null)
+    }
+  }
+
   if (!movie) return null
 
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
@@ -198,6 +255,61 @@ export default function MovieDetailsModal({
           >
             ✏️ Edit Movie
           </button>
+
+          {/* Similar Movies */}
+          <div className={`pt-4 border-t ${border}`}>
+            <h3 className="font-bold mb-3">Similar Movies</h3>
+            {loadingSimilar ? (
+              <div className="flex justify-center py-4">
+                <span className="animate-spin text-2xl">🎬</span>
+              </div>
+            ) : similarMovies.length > 0 ? (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {similarMovies.map(sm => {
+                  const alreadyAdded = isAlreadyAdded(sm.title)
+                  const isAdding = addingId === sm.tmdb_id
+                  return (
+                    <div
+                      key={sm.tmdb_id}
+                      className={`flex-shrink-0 w-28 ${card} border ${border} rounded overflow-hidden`}
+                    >
+                      {sm.poster ? (
+                        <img
+                          src={sm.poster}
+                          alt={sm.title}
+                          className="w-full h-40 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-3xl">
+                          🎬
+                        </div>
+                      )}
+                      <div className="p-2">
+                        <p className="text-xs font-medium truncate" title={sm.title}>{sm.title}</p>
+                        <p className="text-xs opacity-50">{sm.year}</p>
+                        {sm.rating > 0 && (
+                          <p className="text-xs text-yellow-400">★ {sm.rating.toFixed(1)}</p>
+                        )}
+                        {alreadyAdded ? (
+                          <span className="text-xs text-green-400">✓ In list</span>
+                        ) : onAddMovie && (
+                          <button
+                            onClick={() => handleAddSimilar(sm)}
+                            disabled={isAdding}
+                            className="mt-1 w-full text-xs px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                          >
+                            {isAdding ? '...' : '+ Add'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className={`text-sm ${textMuted}`}>No similar movies found</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
