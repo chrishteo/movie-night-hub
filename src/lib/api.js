@@ -1,5 +1,23 @@
 import { GENRES, MOODS, STREAMING } from '../utils/constants'
 
+// Quick search TMDB for multiple results
+export async function searchTMDB(query) {
+  const response = await fetch('/api/search-tmdb', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query })
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to search movies')
+  }
+
+  return response.json()
+}
+
 export async function searchMovie(title) {
   const response = await fetch('/api/search-movie', {
     method: 'POST',

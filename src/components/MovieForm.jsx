@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { GENRES, MOODS, STREAMING } from '../utils/constants'
-import { searchMovie } from '../lib/api'
+import { searchMovie, searchTMDB } from '../lib/api'
 
 export default function MovieForm({
   movie,
@@ -29,25 +29,52 @@ export default function MovieForm({
     imdb_rating: movie?.imdb_rating || null,
     rotten_tomatoes: movie?.rotten_tomatoes || null
   })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
+  const [loadingDetails, setLoadingDetails] = useState(false)
   const [searchError, setSearchError] = useState('')
 
-  const handleSearch = async () => {
-    if (!formData.title.trim()) return
+  // Step 1: Search TMDB for multiple results
+  const handleQuickSearch = async () => {
+    if (!searchQuery.trim()) return
 
     setSearching(true)
     setSearchError('')
+    setSearchResults([])
 
     try {
-      const info = await searchMovie(formData.title)
+      const results = await searchTMDB(searchQuery)
+      if (results.length === 0) {
+        setSearchError('No movies found. Try a different search.')
+      } else {
+        setSearchResults(results)
+      }
+    } catch (err) {
+      setSearchError(err.message || 'Search failed.')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // Step 2: User picks a movie, fetch full details
+  const handleSelectMovie = async (movie) => {
+    setSearchResults([])
+    setLoadingDetails(true)
+    setSearchError('')
+
+    try {
+      // Search with exact title and year for better accuracy
+      const searchTitle = movie.year ? `${movie.title} ${movie.year}` : movie.title
+      const info = await searchMovie(searchTitle)
       setFormData(prev => ({
         ...prev,
-        title: info.title || prev.title,
+        title: info.title || movie.title,
         director: info.director || prev.director,
-        year: info.year || prev.year,
+        year: info.year || movie.year || prev.year,
         genre: info.genre || prev.genre,
         mood: info.mood || prev.mood,
-        poster: info.poster || prev.poster,
+        poster: info.poster || movie.poster || prev.poster,
         streaming: info.streaming?.length ? info.streaming : prev.streaming,
         trailer_url: info.trailer_url || prev.trailer_url,
         tmdb_rating: info.tmdb_rating || prev.tmdb_rating,
@@ -55,10 +82,11 @@ export default function MovieForm({
         imdb_rating: info.imdb_rating || prev.imdb_rating,
         rotten_tomatoes: info.rotten_tomatoes || prev.rotten_tomatoes
       }))
+      setSearchQuery('')
     } catch (err) {
-      setSearchError(err.message || 'Could not find movie info.')
+      setSearchError(err.message || 'Could not load movie details.')
     } finally {
-      setSearching(false)
+      setLoadingDetails(false)
     }
   }
 
@@ -90,18 +118,20 @@ export default function MovieForm({
       <div className={`${card} rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-auto`}>
         <h2 className="text-xl font-bold mb-4">{title}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Search Section */}
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Movie title..."
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Search for a movie..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickSearch())}
               className={`flex-1 px-3 py-2 rounded ${input} border ${border}`}
             />
             <button
               type="button"
-              onClick={handleSearch}
-              disabled={searching || !formData.title.trim()}
+              onClick={handleQuickSearch}
+              disabled={searching || !searchQuery.trim()}
               className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
             >
               {searching ? '...' : '🔍'}
@@ -109,8 +139,34 @@ export default function MovieForm({
           </div>
 
           {searchError && <p className="text-red-400 text-sm">{searchError}</p>}
-          {searching && <p className="text-purple-400 text-sm">Searching with AI...</p>}
+          {searching && <p className="text-purple-400 text-sm">Searching...</p>}
+          {loadingDetails && <p className="text-purple-400 text-sm">Loading movie details...</p>}
 
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className={`border ${border} rounded-lg overflow-hidden max-h-60 overflow-auto`}>
+              {searchResults.map((result) => (
+                <button
+                  key={result.tmdb_id}
+                  type="button"
+                  onClick={() => handleSelectMovie(result)}
+                  className={`w-full flex items-center gap-3 p-2 ${input} hover:bg-purple-600/30 text-left border-b ${border} last:border-b-0`}
+                >
+                  {result.poster ? (
+                    <img src={result.poster} alt="" className="w-10 h-14 object-cover rounded" />
+                  ) : (
+                    <div className="w-10 h-14 bg-gray-600 rounded flex items-center justify-center text-lg">🎬</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{result.title}</p>
+                    <p className="text-sm opacity-70">{result.year || 'Unknown year'}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Selected Movie Poster */}
           {formData.poster && (
             <div className="flex justify-center">
               <img
@@ -121,6 +177,15 @@ export default function MovieForm({
               />
             </div>
           )}
+
+          {/* Title (editable) */}
+          <input
+            type="text"
+            placeholder="Movie title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className={`w-full px-3 py-2 rounded ${input} border ${border}`}
+          />
 
           <input
             type="text"
