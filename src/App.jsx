@@ -19,6 +19,7 @@ import ShareModal from './components/ShareModal'
 import StatsModal from './components/StatsModal'
 import Confetti from './components/Confetti'
 import WinnerOverlay from './components/WinnerOverlay'
+import BottomNav from './components/BottomNav'
 
 export default function App() {
   // Dark mode state
@@ -75,6 +76,7 @@ export default function App() {
   const [showMOTW, setShowMOTW] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -186,7 +188,7 @@ export default function App() {
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
   return (
-    <div className={`min-h-screen ${bg} ${text} p-4 transition-colors relative`}>
+    <div className={`min-h-screen ${bg} ${text} p-4 pb-20 md:pb-4 transition-colors relative`}>
       {/* Effects */}
       {showConfetti && <Confetti />}
       {winner && <WinnerOverlay movie={winner} onClose={() => setWinner(null)} />}
@@ -221,8 +223,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      {/* Action Buttons - Desktop only */}
+      <div className="hidden md:flex flex-wrap gap-2 mb-3">
         <button
           onClick={() => handleFilterChange('view', 'all')}
           className={`px-3 py-1.5 rounded text-sm ${
@@ -293,12 +295,44 @@ export default function App() {
         </button>
       </div>
 
-      {/* Filter Bar */}
-      <FilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        darkMode={darkMode}
-      />
+      {/* Mobile Action Row */}
+      <div className="md:hidden flex gap-2 mb-3">
+        <button
+          onClick={() => handleFilterChange('view', 'all')}
+          className={`flex-1 py-2 rounded text-sm font-medium ${
+            filters.view === 'all'
+              ? 'bg-purple-600 text-white'
+              : card
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => handleFilterChange('view', 'mine')}
+          className={`flex-1 py-2 rounded text-sm font-medium ${
+            filters.view === 'mine'
+              ? 'bg-purple-600 text-white'
+              : card
+          }`}
+        >
+          Mine
+        </button>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-4 py-2 rounded text-sm ${showFilters ? 'bg-purple-600 text-white' : card}`}
+        >
+          🔽 Filters
+        </button>
+      </div>
+
+      {/* Filter Bar - Collapsible on mobile */}
+      <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
+        <FilterBar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          darkMode={darkMode}
+        />
+      </div>
 
       {/* Movie Grid */}
       <MovieGrid
@@ -309,6 +343,7 @@ export default function App() {
         onDelete={handleDeleteMovie}
         onMovieClick={setSelectedMovie}
         darkMode={darkMode}
+        loading={moviesLoading}
       />
 
       {/* Modals */}
@@ -418,6 +453,16 @@ export default function App() {
           darkMode={darkMode}
         />
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav
+        onAddMovie={() => setShowAddMovie(true)}
+        onSpinWheel={() => setShowWheel(true)}
+        onVote={() => setShowVoting(true)}
+        onShowRecs={() => setShowRecs(true)}
+        onShowStats={() => setShowStats(true)}
+        darkMode={darkMode}
+      />
     </div>
   )
 }

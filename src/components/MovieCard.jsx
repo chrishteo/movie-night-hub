@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { STREAMING_COLORS } from '../utils/constants'
 
 function StreamingBadge({ service }) {
@@ -20,11 +21,91 @@ export default function MovieCard({
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
+  // Swipe state
+  const [swipeX, setSwipeX] = useState(0)
+  const [swiping, setSwiping] = useState(false)
+  const startX = useRef(0)
+  const startY = useRef(0)
+
+  // Animation states
+  const [heartPulse, setHeartPulse] = useState(false)
+  const [checkBounce, setCheckBounce] = useState(false)
+
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+    setSwiping(true)
+  }
+
+  const handleTouchMove = (e) => {
+    if (!swiping) return
+    const deltaX = e.touches[0].clientX - startX.current
+    const deltaY = Math.abs(e.touches[0].clientY - startY.current)
+
+    // If scrolling vertically, don't swipe
+    if (deltaY > 30) {
+      setSwiping(false)
+      setSwipeX(0)
+      return
+    }
+
+    setSwipeX(deltaX)
+  }
+
+  const handleTouchEnd = () => {
+    if (swipeX > 80) {
+      // Swipe right - mark watched
+      setCheckBounce(true)
+      setTimeout(() => setCheckBounce(false), 300)
+      onToggleWatched(movie.id)
+    } else if (swipeX < -80) {
+      // Swipe left - toggle favorite
+      setHeartPulse(true)
+      setTimeout(() => setHeartPulse(false), 300)
+      onToggleFavorite(movie.id)
+    }
+    setSwiping(false)
+    setSwipeX(0)
+  }
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation()
+    setHeartPulse(true)
+    setTimeout(() => setHeartPulse(false), 300)
+    onToggleFavorite(movie.id)
+  }
+
+  const handleWatchedClick = (e) => {
+    e.stopPropagation()
+    setCheckBounce(true)
+    setTimeout(() => setCheckBounce(false), 300)
+    onToggleWatched(movie.id)
+  }
+
+  // Swipe indicator colors
+  const swipeStyle = {
+    transform: `translateX(${swipeX * 0.3}px)`,
+    transition: swiping ? 'none' : 'transform 0.2s ease-out'
+  }
+
   return (
-    <div
-      className={`${card} rounded-lg overflow-hidden border ${border} flex flex-col cursor-pointer hover:border-purple-500 transition-colors`}
-      onClick={() => onClick(movie)}
-    >
+    <div className="relative overflow-hidden rounded-lg animate-slide-in">
+      {/* Swipe background indicators */}
+      <div className={`absolute inset-0 flex items-center justify-start pl-4 bg-green-500 transition-opacity ${swipeX > 40 ? 'opacity-100' : 'opacity-0'}`}>
+        <span className="text-white text-2xl">✓</span>
+      </div>
+      <div className={`absolute inset-0 flex items-center justify-end pr-4 bg-red-500 transition-opacity ${swipeX < -40 ? 'opacity-100' : 'opacity-0'}`}>
+        <span className="text-white text-2xl">♥</span>
+      </div>
+
+      <div
+        className={`${card} border ${border} flex flex-col cursor-pointer hover:border-purple-500 transition-colors relative`}
+        style={swipeStyle}
+        onClick={() => onClick(movie)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
       <div className="flex">
         {movie.poster ? (
           <img
@@ -43,8 +124,8 @@ export default function MovieCard({
             <h3 className="font-bold text-sm truncate">{movie.title}</h3>
             <div className="flex gap-0.5 flex-shrink-0">
               <button
-                onClick={(e) => { e.stopPropagation(); onToggleFavorite(movie.id); }}
-                className={`text-sm px-1 rounded ${movie.favorite ? 'text-red-500 bg-red-500/20' : 'text-gray-400'} hover:text-red-400`}
+                onClick={handleFavoriteClick}
+                className={`text-sm px-1 rounded ${movie.favorite ? 'text-red-500 bg-red-500/20' : 'text-gray-400'} hover:text-red-400 ${heartPulse ? 'animate-heart-pulse' : ''}`}
                 title={movie.favorite ? 'Remove from favorites' : 'Add to favorites'}
               >
                 {movie.favorite ? '♥' : '♡'}
@@ -116,13 +197,14 @@ export default function MovieCard({
       <div className="flex items-center justify-between mt-auto p-2 pt-1">
         <span className="text-xs opacity-50">{movie.added_by}</span>
         <button
-          onClick={(e) => { e.stopPropagation(); onToggleWatched(movie.id); }}
+          onClick={handleWatchedClick}
           className={`px-2 py-0.5 rounded text-xs ${
             movie.watched ? 'bg-green-600' : 'bg-gray-600'
-          } hover:opacity-80`}
+          } hover:opacity-80 ${checkBounce ? 'animate-check-bounce' : ''}`}
         >
           {movie.watched ? '✓ Watched' : 'Unwatched'}
         </button>
+      </div>
       </div>
     </div>
   )
