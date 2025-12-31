@@ -7,19 +7,31 @@ const OMDB_API_KEY = process.env.OMDB_API_KEY;
 
 // Fetch IMDB and Rotten Tomatoes ratings from OMDB
 async function getOMDBRatings(title, year) {
-  if (!OMDB_API_KEY) return { imdb_rating: null, rotten_tomatoes: null };
+  if (!OMDB_API_KEY) {
+    console.log('OMDB: No API key configured');
+    return { imdb_rating: null, rotten_tomatoes: null };
+  }
 
   try {
     const query = encodeURIComponent(title);
     const yearParam = year ? `&y=${year}` : '';
-    const response = await fetch(
-      `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${query}${yearParam}`
-    );
+    const url = `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${query}${yearParam}`;
+    console.log('OMDB: Fetching', url.replace(OMDB_API_KEY, '***'));
 
-    if (!response.ok) return { imdb_rating: null, rotten_tomatoes: null };
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.log('OMDB: Response not OK', response.status);
+      return { imdb_rating: null, rotten_tomatoes: null };
+    }
 
     const data = await response.json();
-    if (data.Response === 'False') return { imdb_rating: null, rotten_tomatoes: null };
+    console.log('OMDB: Response', JSON.stringify(data).substring(0, 200));
+
+    if (data.Response === 'False') {
+      console.log('OMDB: Movie not found -', data.Error);
+      return { imdb_rating: null, rotten_tomatoes: null };
+    }
 
     // Extract IMDB rating
     const imdb_rating = data.imdbRating && data.imdbRating !== 'N/A'
@@ -35,6 +47,7 @@ async function getOMDBRatings(title, year) {
       }
     }
 
+    console.log('OMDB: Returning', { imdb_rating, rotten_tomatoes });
     return { imdb_rating, rotten_tomatoes };
   } catch (err) {
     console.error('OMDB error:', err);
