@@ -27,8 +27,8 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Return top 8 results with basic info
-    const results = (data.results || []).slice(0, 8).map(movie => ({
+    // Return top 5 results with basic info (TMDB sorts by popularity)
+    const results = (data.results || []).slice(0, 5).map(movie => ({
       tmdb_id: movie.id,
       title: movie.title,
       year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : null,

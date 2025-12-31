@@ -144,22 +144,21 @@ export default function MovieForm({
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <div className={`border ${border} rounded-lg overflow-hidden max-h-60 overflow-auto`}>
+            <div className={`border ${border} rounded-lg max-h-64 overflow-y-auto`}>
               {searchResults.map((result) => (
                 <button
                   key={result.tmdb_id}
                   type="button"
                   onClick={() => handleSelectMovie(result)}
-                  className={`w-full flex items-center gap-3 p-2 ${input} hover:bg-purple-600/30 text-left border-b ${border} last:border-b-0`}
+                  className={`w-full flex items-center gap-2 p-2 ${input} hover:bg-purple-600/30 text-left border-b ${border} last:border-b-0`}
                 >
                   {result.poster ? (
-                    <img src={result.poster} alt="" className="w-10 h-14 object-cover rounded" />
+                    <img src={result.poster} alt="" className="w-8 h-12 object-cover rounded flex-shrink-0" />
                   ) : (
-                    <div className="w-10 h-14 bg-gray-600 rounded flex items-center justify-center text-lg">🎬</div>
+                    <div className="w-8 h-12 bg-gray-600 rounded flex items-center justify-center text-sm flex-shrink-0">🎬</div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{result.title}</p>
-                    <p className="text-sm opacity-70">{result.year || 'Unknown year'}</p>
+                    <p className="font-medium text-sm truncate">{result.title} <span className="opacity-60">({result.year || '?'})</span></p>
                   </div>
                 </button>
               ))}
