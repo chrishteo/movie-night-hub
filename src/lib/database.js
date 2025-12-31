@@ -60,7 +60,10 @@ export async function addMovie(movie) {
       watched_at: movie.watched_at || null,
       favorite: movie.favorite || false,
       notes: movie.notes || null,
-      added_by: movie.added_by
+      added_by: movie.added_by,
+      trailer_url: movie.trailer_url || null,
+      tmdb_rating: movie.tmdb_rating || null,
+      "cast": movie.cast || []
     }])
     .select()
     .single()
