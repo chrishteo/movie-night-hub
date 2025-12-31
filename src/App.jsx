@@ -22,6 +22,7 @@ import Confetti from './components/Confetti'
 import WinnerOverlay from './components/WinnerOverlay'
 import BottomNav from './components/BottomNav'
 import ConfirmDialog from './components/ConfirmDialog'
+import TrendingMovies from './components/TrendingMovies'
 
 export default function App() {
   const { addToast } = useToast()
@@ -81,6 +82,7 @@ export default function App() {
   const [showMOTW, setShowMOTW] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showTrending, setShowTrending] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
   const [bulkSelectMode, setBulkSelectMode] = useState(false)
@@ -424,6 +426,12 @@ export default function App() {
         >
           📊
         </button>
+        <button
+          onClick={() => setShowTrending(true)}
+          className="px-3 py-1.5 rounded text-sm bg-red-600 hover:bg-red-700 text-white"
+        >
+          🔥
+        </button>
       </div>
 
       {/* Mobile Action Row */}
@@ -596,6 +604,16 @@ export default function App() {
         />
       )}
 
+      {showTrending && (
+        <TrendingMovies
+          existingMovies={movies}
+          currentUser={currentUser}
+          onAddMovie={handleAddMovie}
+          onClose={() => setShowTrending(false)}
+          darkMode={darkMode}
+        />
+      )}
+
       {/* Mobile Bottom Navigation */}
       <BottomNav
         onAddMovie={() => setShowAddMovie(true)}
@@ -603,6 +621,7 @@ export default function App() {
         onVote={() => setShowVoting(true)}
         onShowRecs={() => setShowRecs(true)}
         onShowStats={() => setShowStats(true)}
+        onShowTrending={() => setShowTrending(true)}
         darkMode={darkMode}
       />
 
