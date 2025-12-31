@@ -2,6 +2,31 @@ const GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thr
 const MOODS = ['Feel-good', 'Intense', 'Thought-provoking', 'Scary', 'Romantic', 'Fun', 'Emotional', 'Adventurous'];
 const STREAMING = ['Netflix', 'Amazon Prime', 'Disney+', 'HBO Max', 'Hulu', 'Apple TV+', 'Paramount+', 'Peacock', 'Other'];
 
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+
+// Fetch poster from TMDB
+async function getTMDBPoster(title, year) {
+  if (!TMDB_API_KEY) return '';
+
+  try {
+    const query = encodeURIComponent(title);
+    const yearParam = year ? `&year=${year}` : '';
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${query}${yearParam}`
+    );
+
+    if (!response.ok) return '';
+
+    const data = await response.json();
+    if (data.results && data.results.length > 0 && data.results[0].poster_path) {
+      return `https://image.tmdb.org/t/p/w500${data.results[0].poster_path}`;
+    }
+  } catch (err) {
+    console.error('TMDB error:', err);
+  }
+  return '';
+}
+
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -89,14 +114,19 @@ Important: Return ONLY the JSON object, no other text or explanation.`
     try {
       const movieInfo = JSON.parse(jsonMatch[0]);
 
+      // Get poster from TMDB (more reliable than AI-generated URLs)
+      const movieTitle = movieInfo.title || title;
+      const movieYear = typeof movieInfo.year === 'number' ? movieInfo.year : parseInt(movieInfo.year) || null;
+      const poster = await getTMDBPoster(movieTitle, movieYear);
+
       // Validate and sanitize the response
       const result = {
-        title: movieInfo.title || title,
+        title: movieTitle,
         director: movieInfo.director || '',
-        year: typeof movieInfo.year === 'number' ? movieInfo.year : parseInt(movieInfo.year) || null,
+        year: movieYear,
         genre: GENRES.includes(movieInfo.genre) ? movieInfo.genre : '',
         mood: MOODS.includes(movieInfo.mood) ? movieInfo.mood : '',
-        poster: typeof movieInfo.poster === 'string' ? movieInfo.poster : '',
+        poster: poster,
         streaming: Array.isArray(movieInfo.streaming)
           ? movieInfo.streaming.filter(s => STREAMING.includes(s))
           : []
