@@ -75,20 +75,50 @@ export default function MovieDetailsModal({
             )}
           </div>
 
-          {/* Rating */}
-          <div className="flex items-center gap-2">
-            <span className={textMuted}>Rating:</span>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map(s => (
-                <span
-                  key={s}
-                  className={`text-lg ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
-                >
-                  ★
-                </span>
-              ))}
+          {/* Ratings */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className={textMuted}>Your Rating:</span>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <span
+                    key={s}
+                    className={`text-lg ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
             </div>
+            {movie.tmdb_rating && (
+              <div className="flex items-center gap-2">
+                <span className={textMuted}>TMDB:</span>
+                <span className="px-2 py-0.5 bg-yellow-600 rounded text-sm font-bold">
+                  {movie.tmdb_rating.toFixed(1)}/10
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* Cast */}
+          {movie.cast?.length > 0 && (
+            <div>
+              <p className={`text-sm ${textMuted} mb-2`}>Cast:</p>
+              <p className="text-sm">{movie.cast.join(', ')}</p>
+            </div>
+          )}
+
+          {/* Trailer */}
+          {movie.trailer_url && (
+            <a
+              href={movie.trailer_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            >
+              ▶ Watch Trailer
+            </a>
+          )}
 
           {/* Streaming */}
           {movie.streaming?.length > 0 && (

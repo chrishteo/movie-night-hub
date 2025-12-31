@@ -78,15 +78,22 @@ export default function MovieCard({
               </span>
             )}
           </div>
-          <div className="flex gap-0.5 mt-1">
-            {[1, 2, 3, 4, 5].map(s => (
-              <span
-                key={s}
-                className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
-              >
-                ★
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map(s => (
+                <span
+                  key={s}
+                  className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            {movie.tmdb_rating && (
+              <span className="px-1 py-0.5 bg-yellow-600 rounded text-xs font-bold">
+                {movie.tmdb_rating.toFixed(1)}
               </span>
-            ))}
+            )}
           </div>
         </div>
       </div>

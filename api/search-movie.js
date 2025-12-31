@@ -4,27 +4,62 @@ const STREAMING = ['Netflix', 'Amazon Prime', 'Disney+', 'HBO Max', 'Hulu', 'App
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
-// Fetch poster from TMDB
-async function getTMDBPoster(title, year) {
-  if (!TMDB_API_KEY) return '';
+// Fetch full movie data from TMDB (poster, rating, trailer, cast)
+async function getTMDBData(title, year) {
+  if (!TMDB_API_KEY) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [] };
 
   try {
+    // Search for the movie
     const query = encodeURIComponent(title);
     const yearParam = year ? `&year=${year}` : '';
-    const response = await fetch(
+    const searchResponse = await fetch(
       `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${query}${yearParam}`
     );
 
-    if (!response.ok) return '';
+    if (!searchResponse.ok) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [] };
 
-    const data = await response.json();
-    if (data.results && data.results.length > 0 && data.results[0].poster_path) {
-      return `https://image.tmdb.org/t/p/w500${data.results[0].poster_path}`;
+    const searchData = await searchResponse.json();
+    if (!searchData.results || searchData.results.length === 0) {
+      return { poster: '', tmdb_rating: null, trailer_url: '', cast: [] };
     }
+
+    const movie = searchData.results[0];
+    const movieId = movie.id;
+    const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
+    const tmdb_rating = movie.vote_average || null;
+
+    // Fetch videos (trailers) and credits (cast) in parallel
+    const [videosResponse, creditsResponse] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${TMDB_API_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${TMDB_API_KEY}`)
+    ]);
+
+    // Get trailer URL
+    let trailer_url = '';
+    if (videosResponse.ok) {
+      const videosData = await videosResponse.json();
+      const trailer = videosData.results?.find(
+        v => v.type === 'Trailer' && v.site === 'YouTube'
+      ) || videosData.results?.find(
+        v => v.site === 'YouTube'
+      );
+      if (trailer) {
+        trailer_url = `https://www.youtube.com/watch?v=${trailer.key}`;
+      }
+    }
+
+    // Get top cast members
+    let cast = [];
+    if (creditsResponse.ok) {
+      const creditsData = await creditsResponse.json();
+      cast = creditsData.cast?.slice(0, 5).map(actor => actor.name) || [];
+    }
+
+    return { poster, tmdb_rating, trailer_url, cast };
   } catch (err) {
     console.error('TMDB error:', err);
+    return { poster: '', tmdb_rating: null, trailer_url: '', cast: [] };
   }
-  return '';
 }
 
 export default async function handler(req, res) {
@@ -114,10 +149,10 @@ Important: Return ONLY the JSON object, no other text or explanation.`
     try {
       const movieInfo = JSON.parse(jsonMatch[0]);
 
-      // Get poster from TMDB (more reliable than AI-generated URLs)
+      // Get full movie data from TMDB (poster, rating, trailer, cast)
       const movieTitle = movieInfo.title || title;
       const movieYear = typeof movieInfo.year === 'number' ? movieInfo.year : parseInt(movieInfo.year) || null;
-      const poster = await getTMDBPoster(movieTitle, movieYear);
+      const tmdbData = await getTMDBData(movieTitle, movieYear);
 
       // Validate and sanitize the response
       const result = {
@@ -126,10 +161,13 @@ Important: Return ONLY the JSON object, no other text or explanation.`
         year: movieYear,
         genre: GENRES.includes(movieInfo.genre) ? movieInfo.genre : '',
         mood: MOODS.includes(movieInfo.mood) ? movieInfo.mood : '',
-        poster: poster,
+        poster: tmdbData.poster,
         streaming: Array.isArray(movieInfo.streaming)
           ? movieInfo.streaming.filter(s => STREAMING.includes(s))
-          : []
+          : [],
+        trailer_url: tmdbData.trailer_url,
+        tmdb_rating: tmdbData.tmdb_rating,
+        cast: tmdbData.cast
       };
 
       return res.status(200).json(result);
