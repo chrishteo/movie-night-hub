@@ -25,6 +25,8 @@ import ConfirmDialog from './components/ConfirmDialog'
 import TrendingMovies from './components/TrendingMovies'
 import Collections from './components/Collections'
 import MovieNightScheduler from './components/MovieNightScheduler'
+import OfflineIndicator from './components/OfflineIndicator'
+import InstallPrompt from './components/InstallPrompt'
 
 export default function App() {
   const { addToast } = useToast()
@@ -282,6 +284,9 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${bg} ${text} p-4 pb-20 md:pb-4 transition-colors relative`}>
+      {/* Offline Indicator */}
+      <OfflineIndicator />
+
       {/* Effects */}
       {showConfetti && <Confetti />}
       {winner && <WinnerOverlay movie={winner} onClose={() => setWinner(null)} />}
@@ -672,6 +677,9 @@ export default function App() {
         onCancel={() => setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })}
         darkMode={darkMode}
       />
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt darkMode={darkMode} />
     </div>
   )
 }
