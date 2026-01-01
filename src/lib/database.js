@@ -46,14 +46,24 @@ export async function deleteUser(id) {
 
 // ============ MOVIES ============
 
-export async function getMovies() {
-  const { data, error } = await supabase
+const MOVIES_PER_PAGE = 50
+
+export async function getMovies(page = 0) {
+  const from = page * MOVIES_PER_PAGE
+  const to = from + MOVIES_PER_PAGE - 1
+
+  const { data, error, count } = await supabase
     .from('movies')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) throw error
-  return data
+  return {
+    movies: data,
+    hasMore: count > to + 1,
+    total: count
+  }
 }
 
 export async function addMovie(movie) {

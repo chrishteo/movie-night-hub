@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
+import { useAuth } from './hooks/useAuth.jsx'
 import { filterMovies, sortMovies } from './utils/helpers'
 import { useToast } from './components/Toast'
 
+import Auth from './components/Auth'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
 import MovieGrid from './components/MovieGrid'
@@ -30,6 +32,7 @@ import InstallPrompt from './components/InstallPrompt'
 
 export default function App() {
   const { addToast } = useToast()
+  const { user, loading: authLoading, signOut, isAuthenticated } = useAuth()
 
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
@@ -37,15 +40,36 @@ export default function App() {
     return saved !== null ? JSON.parse(saved) : true
   })
 
+  // Show loading screen while checking auth
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Auth darkMode={darkMode} />
+  }
+
   // Data hooks
   const {
     movies,
     loading: moviesLoading,
+    loadingMore,
+    hasMore,
+    total,
     addMovie,
     updateMovie,
     deleteMovie,
     toggleWatched,
-    toggleFavorite
+    toggleFavorite,
+    loadMore
   } = useMovies()
 
   const {
@@ -91,6 +115,7 @@ export default function App() {
   const [showScheduler, setShowScheduler] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
+  const [duplicateConfirm, setDuplicateConfirm] = useState({ isOpen: false, movieData: null, existingMovie: null })
   const [bulkSelectMode, setBulkSelectMode] = useState(false)
   const [selectedMovies, setSelectedMovies] = useState(new Set())
 
@@ -132,7 +157,24 @@ export default function App() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleAddMovie = async (movieData) => {
+  const handleAddMovie = async (movieData, skipDuplicateCheck = false) => {
+    // Check for duplicates unless we're confirming an intentional duplicate
+    if (!skipDuplicateCheck && movieData.title) {
+      const normalizedTitle = movieData.title.toLowerCase().trim()
+      const existingMovie = movies.find(m =>
+        m.title.toLowerCase().trim() === normalizedTitle
+      )
+
+      if (existingMovie) {
+        setDuplicateConfirm({
+          isOpen: true,
+          movieData,
+          existingMovie
+        })
+        return
+      }
+    }
+
     try {
       await addMovie({
         ...movieData,
@@ -142,6 +184,15 @@ export default function App() {
       addToast('Movie added successfully!', 'success')
     } catch (err) {
       addToast('Failed to add movie: ' + err.message, 'error')
+    }
+  }
+
+  const confirmAddDuplicate = async () => {
+    const { movieData } = duplicateConfirm
+    setDuplicateConfirm({ isOpen: false, movieData: null, existingMovie: null })
+
+    if (movieData) {
+      await handleAddMovie(movieData, true) // Skip duplicate check
     }
   }
 
@@ -319,6 +370,8 @@ export default function App() {
         onAddUser={() => setShowAddUser(true)}
         onDeleteUser={deleteUser}
         onUpdateUser={updateUser}
+        onSignOut={signOut}
+        authEmail={user?.email}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
       />
@@ -537,6 +590,33 @@ export default function App() {
         onToggleSelect={toggleMovieSelection}
       />
 
+      {/* Load More Button */}
+      {hasMore && !moviesLoading && (
+        <div className="flex justify-center py-8">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              darkMode
+                ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            } ${loadingMore ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {loadingMore ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading...
+              </span>
+            ) : (
+              `Load More (${movies.length} of ${total})`
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Modals */}
       {showAddMovie && (
         <MovieForm
@@ -695,6 +775,19 @@ export default function App() {
         confirmStyle="danger"
         onConfirm={confirmDeleteMovie}
         onCancel={() => setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })}
+        darkMode={darkMode}
+      />
+
+      {/* Duplicate Movie Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={duplicateConfirm.isOpen}
+        title="Duplicate Movie"
+        message={`"${duplicateConfirm.existingMovie?.title}" is already in your list${duplicateConfirm.existingMovie?.added_by ? ` (added by ${duplicateConfirm.existingMovie.added_by})` : ''}. Add it anyway?`}
+        confirmText="Add Anyway"
+        cancelText="Cancel"
+        confirmStyle="warning"
+        onConfirm={confirmAddDuplicate}
+        onCancel={() => setDuplicateConfirm({ isOpen: false, movieData: null, existingMovie: null })}
         darkMode={darkMode}
       />
 

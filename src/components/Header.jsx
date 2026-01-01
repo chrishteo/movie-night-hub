@@ -9,6 +9,8 @@ export default function Header({
   onAddUser,
   onDeleteUser,
   onUpdateUser,
+  onSignOut,
+  authEmail,
   darkMode,
   onToggleDarkMode
 }) {
@@ -110,6 +112,26 @@ export default function Header({
                     <span>−</span>
                     <span>Remove {currentUser}</span>
                   </button>
+                  {onSignOut && (
+                    <>
+                      <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                      {authEmail && (
+                        <div className="px-3 py-1 text-xs opacity-50 truncate">
+                          {authEmail}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          onSignOut()
+                          setShowUserMenu(false)
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-gray-500/20 text-gray-400"
+                      >
+                        <span>🚪</span>
+                        <span>Sign Out</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </>

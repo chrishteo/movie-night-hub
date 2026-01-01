@@ -14,6 +14,8 @@ export default function ConfirmDialog({
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const confirmBg = confirmStyle === 'danger'
     ? 'bg-red-600 hover:bg-red-700'
+    : confirmStyle === 'warning'
+    ? 'bg-amber-600 hover:bg-amber-700'
     : 'bg-purple-600 hover:bg-purple-700'
 
   return (

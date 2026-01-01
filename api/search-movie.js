@@ -1,14 +1,13 @@
-const GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thriller', 'Animation', 'Documentary', 'Fantasy', 'Adventure', 'Crime', 'Mystery'];
-const MOODS = ['Feel-good', 'Intense', 'Thought-provoking', 'Scary', 'Romantic', 'Fun', 'Emotional', 'Adventurous'];
-const STREAMING = ['Netflix', 'Amazon Prime', 'Disney+', 'HBO Max', 'Hulu', 'Apple TV+', 'Paramount+', 'Peacock', 'Other'];
+import { GENRES, MOODS, STREAMING } from '../shared/constants.js';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
+const isDev = process.env.NODE_ENV !== 'production';
 
 // Fetch IMDB and Rotten Tomatoes ratings from OMDB
 async function getOMDBRatings(title, year) {
   if (!OMDB_API_KEY) {
-    console.log('OMDB: No API key configured');
+    if (isDev) console.log('OMDB: No API key configured');
     return { imdb_rating: null, rotten_tomatoes: null };
   }
 
@@ -16,20 +15,18 @@ async function getOMDBRatings(title, year) {
     const query = encodeURIComponent(title);
     const yearParam = year ? `&y=${year}` : '';
     const url = `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${query}${yearParam}`;
-    console.log('OMDB: Fetching', url.replace(OMDB_API_KEY, '***'));
 
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.log('OMDB: Response not OK', response.status);
+      if (isDev) console.log('OMDB: Response not OK', response.status);
       return { imdb_rating: null, rotten_tomatoes: null };
     }
 
     const data = await response.json();
-    console.log('OMDB: Response', JSON.stringify(data).substring(0, 200));
 
     if (data.Response === 'False') {
-      console.log('OMDB: Movie not found -', data.Error);
+      if (isDev) console.log('OMDB: Movie not found -', data.Error);
       return { imdb_rating: null, rotten_tomatoes: null };
     }
 
@@ -47,7 +44,6 @@ async function getOMDBRatings(title, year) {
       }
     }
 
-    console.log('OMDB: Returning', { imdb_rating, rotten_tomatoes });
     return { imdb_rating, rotten_tomatoes };
   } catch (err) {
     console.error('OMDB error:', err);

@@ -5,6 +5,7 @@
 CREATE TABLE users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,
+  avatar TEXT DEFAULT '😊',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -24,6 +25,11 @@ CREATE TABLE movies (
   favorite BOOLEAN DEFAULT FALSE,
   notes TEXT,
   added_by TEXT NOT NULL,
+  trailer_url TEXT,
+  tmdb_rating DECIMAL(3,1),
+  "cast" TEXT[], -- Array of actor names
+  imdb_rating DECIMAL(3,1),
+  rotten_tomatoes INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -48,17 +54,51 @@ CREATE TABLE movie_of_the_week (
   picked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Collections table
+CREATE TABLE collections (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  emoji TEXT DEFAULT '📁',
+  color TEXT DEFAULT 'purple',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Collection-Movies junction table
+CREATE TABLE collection_movies (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  collection_id UUID REFERENCES collections(id) ON DELETE CASCADE,
+  movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(collection_id, movie_id)
+);
+
+-- Movie Nights table
+CREATE TABLE movie_nights (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  movie_id UUID REFERENCES movies(id) ON DELETE SET NULL,
+  movie_title TEXT NOT NULL,
+  scheduled_date DATE NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable Row Level Security (but allow all for now since no auth)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movie_of_the_week ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collection_movies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movie_nights ENABLE ROW LEVEL SECURITY;
 
 -- Policies to allow all operations (no auth)
 CREATE POLICY "Allow all" ON users FOR ALL USING (true);
 CREATE POLICY "Allow all" ON movies FOR ALL USING (true);
 CREATE POLICY "Allow all" ON votes FOR ALL USING (true);
 CREATE POLICY "Allow all" ON movie_of_the_week FOR ALL USING (true);
+CREATE POLICY "Allow all" ON collections FOR ALL USING (true);
+CREATE POLICY "Allow all" ON collection_movies FOR ALL USING (true);
+CREATE POLICY "Allow all" ON movie_nights FOR ALL USING (true);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -75,11 +115,14 @@ CREATE TRIGGER update_movies_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Insert default users
-INSERT INTO users (name) VALUES ('Chris'), ('Maria'), ('Alex');
+-- Create indexes for common queries
+CREATE INDEX idx_movies_genre ON movies(genre);
+CREATE INDEX idx_movies_watched ON movies(watched);
+CREATE INDEX idx_movies_added_by ON movies(added_by);
+CREATE INDEX idx_votes_movie_id ON votes(movie_id);
+CREATE INDEX idx_collection_movies_collection_id ON collection_movies(collection_id);
+CREATE INDEX idx_collection_movies_movie_id ON collection_movies(movie_id);
+CREATE INDEX idx_movie_nights_scheduled_date ON movie_nights(scheduled_date);
 
--- Insert sample movies (optional - you can skip this)
-INSERT INTO movies (title, director, year, genre, mood, rating, poster, streaming, watched, watched_at, favorite, notes, added_by) VALUES
-  ('Inception', 'Christopher Nolan', 2010, 'Sci-Fi', 'Intense', 5, 'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg', ARRAY['Netflix'], true, NOW() - INTERVAL '7 days', true, 'Mind-bending!', 'Chris'),
-  ('The Grand Budapest Hotel', 'Wes Anderson', 2014, 'Comedy', 'Fun', 4, 'https://m.media-amazon.com/images/M/MV5BMzM5NjUxOTEyMl5BMl5BanBnXkFtZTgwNjEyMDM0MDE@._V1_SX300.jpg', ARRAY['Amazon Prime'], false, NULL, false, '', 'Maria'),
-  ('Parasite', 'Bong Joon-ho', 2019, 'Thriller', 'Intense', 5, 'https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg', ARRAY['Hulu'], false, NULL, true, 'Oscar winner!', 'Chris');
+-- Insert default users (optional)
+-- INSERT INTO users (name) VALUES ('Chris'), ('Maria'), ('Alex');
