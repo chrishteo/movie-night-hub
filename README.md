@@ -4,19 +4,45 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 
 ## Features
 
+### Core Features
 - **Movie Management**: Add, edit, and delete movies with full details (title, director, year, genre, mood, rating, poster, streaming services)
-- **Multi-User Support**: Simple user system to track who added each movie
+- **Multi-User Support**: User profiles with avatars, linked to authentication
 - **Decision Tools**:
-  - Spin the Wheel: Random movie picker with animation
-  - Voting System: Users vote yes/no on movies
+  - Spin the Wheel: Random movie picker with participant selection
+  - Voting System: Users vote yes/no on movies with participant selection
   - Movie of the Week: Schedule picks with history
 - **AI-Powered** (via Anthropic Claude):
   - Auto-fill movie details by searching
   - Smart recommendations based on your collection
-- **Filtering & Sorting**: By genre, mood, streaming service, watched status, and more
+- **Filtering & Sorting**: By genre, mood, streaming service, watched status, favorites, and who added
 - **Dark/Light Mode**: Toggle between themes
 - **Real-time Updates**: See changes from other users instantly
 - **Share List**: Generate a shareable link to your collection
+- **PWA Support**: Install as app, works offline
+
+### Admin Features
+- **Admin Panel**: Separate admin account with full control
+  - **Users Tab**: View all users, toggle admin status, delete users
+  - **Movies Tab**: Search and delete any movie
+  - **Announcements Tab**: Create/edit/delete announcements with types (info, warning, update, maintenance)
+  - **Bug Reports Tab**: View and manage user-submitted bug reports with status tracking
+- **Announcement Banner**: Dismissible banners at top of app (per-session)
+- **Bug Reporting**: Users can submit bugs and view their own reports
+
+### Onboarding
+- **Guided Tour**: 7-step interactive tutorial for new users
+  - Auto-triggers on first visit
+  - Spotlight effect highlights UI elements
+  - Keyboard navigation (arrows, Enter, Escape)
+  - Re-watchable from user menu
+- **Tooltip Hints**: `?` icons with explanations on key features
+
+### Email Notifications (Admin)
+- **Resend Integration**: Email notifications via Supabase Edge Functions
+- **Triggers**:
+  - New user signups
+  - User profile changes
+  - Bug report submissions
 
 ## Tech Stack
 
@@ -172,6 +198,69 @@ Don't forget to also update the arrays in `api/search-movie.js` and `api/recomme
 
 The app uses Tailwind CSS. Modify colors in `tailwind.config.js` or update the class names in components.
 
+## Admin Setup
+
+### 1. Run Admin Migration
+
+In Supabase SQL Editor, run `supabase-admin-migration.sql` to create:
+- `is_admin` column on users table
+- `announcements` table
+- `bug_reports` table
+- RLS policies for admin access
+
+### 2. Create Admin Account
+
+1. Sign up in the app with your admin email
+2. In Supabase SQL Editor, run:
+```sql
+UPDATE users SET is_admin = TRUE WHERE name = 'YourAdminName';
+```
+
+### 3. Access Admin Panel
+
+Log in as admin → Click "Admin" button in header
+
+---
+
+## Email Notifications Setup
+
+### 1. Create Resend Account
+
+1. Go to [resend.com](https://resend.com) and sign up
+2. Create an API key (starts with `re_`)
+3. Note: Free tier = 3,000 emails/month
+
+### 2. Add Secrets to Supabase
+
+Go to **Project Settings → Edge Functions → Secrets** and add:
+- `RESEND_API_KEY` = your Resend API key
+- `ADMIN_EMAIL` = your email (must match Resend account email for test domain)
+- `FROM_EMAIL` = `onboarding@resend.dev` (or your verified domain)
+
+### 3. Deploy Edge Function
+
+The edge function is in `supabase/functions/send-notification/index.ts`.
+
+Deploy via Supabase Dashboard:
+1. Go to **Edge Functions** → **Create new function**
+2. Name: `send-notification`
+3. Paste the code from `index.ts`
+4. Click **Deploy**
+
+### 4. Run Notification Triggers Migration
+
+In Supabase SQL Editor, run `supabase/migrations/add_notification_triggers.sql`.
+
+**Important**: Replace these placeholders in the SQL:
+- `<YOUR_PROJECT_REF>` → your Supabase project ref (e.g., `sixyhmvvljyyxoycnbqi`)
+- `<YOUR_ANON_KEY>` → your Supabase anon key
+
+### 5. Test
+
+Submit a bug report in the app - you should receive an email!
+
+---
+
 ## Troubleshooting
 
 ### AI Features Not Working
@@ -190,6 +279,38 @@ The app uses Tailwind CSS. Modify colors in `tailwind.config.js` or update the c
 
 - Make sure replication is enabled for the tables in Supabase
 - Check browser console for WebSocket connection errors
+
+### Email Notifications Not Working
+
+- Check Resend dashboard for error logs
+- Verify secrets are set in Supabase Edge Functions
+- For test domain (`onboarding@resend.dev`), `ADMIN_EMAIL` must match your Resend account email
+- Check Edge Function logs in Supabase for errors
+
+### Tutorial Not Showing
+
+- Clear `movienight-tutorial-completed` from localStorage to re-trigger
+- Or click profile dropdown → "View Tutorial"
+
+---
+
+## Recent Updates (Jan 2026)
+
+### Admin Panel & Bug Reporting
+- Full admin dashboard with 4 tabs (Users, Movies, Announcements, Bug Reports)
+- Users can submit and track their own bug reports
+- Announcement system with dismissible banners
+
+### Guided Tour
+- Interactive 7-step tutorial for new users
+- Spotlight effect, keyboard navigation
+- Tooltip hints on key features
+
+### Email Notifications
+- Admin receives emails for new users, profile changes, bug reports
+- Powered by Resend + Supabase Edge Functions
+
+---
 
 ## License
 
