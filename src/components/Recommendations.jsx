@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getRecommendations } from '../lib/api'
+import Modal from './Modal'
 
 export default function Recommendations({
   movies,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useToast } from './Toast'
 import {
   getCollections,
@@ -41,6 +41,15 @@ export default function Collections({ movies, onClose, darkMode }) {
   useEffect(() => {
     fetchCollections()
   }, [])
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   useEffect(() => {
     if (selectedCollection) {

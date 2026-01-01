@@ -1,12 +1,26 @@
 import { useState, useEffect } from 'react'
 import { useToast } from './Toast'
 
+// Hook for Escape key handling
+function useEscapeKey(onClose) {
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+}
+
 export default function TrendingMovies({ onAddMovie, existingMovies, currentUser, onClose, darkMode }) {
   const { addToast } = useToast()
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [timeWindow, setTimeWindow] = useState('week')
+
+  // Handle Escape key
+  useEscapeKey(onClose)
   const [addingId, setAddingId] = useState(null)
 
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
