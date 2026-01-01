@@ -9,7 +9,7 @@ import {
   subscribeToMovies
 } from '../lib/database'
 
-export function useMovies() {
+export function useMovies(authUserId = null) {
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -76,7 +76,8 @@ export function useMovies() {
 
   const addMovie = useCallback(async (movie) => {
     try {
-      const newMovie = await addMovieDb(movie)
+      // Pass authUserId for RLS security
+      const newMovie = await addMovieDb(movie, authUserId)
       // Update local state immediately
       setMovies(prev => [newMovie, ...prev])
       setTotal(prev => prev + 1)
@@ -85,7 +86,7 @@ export function useMovies() {
       setError(err.message)
       throw err
     }
-  }, [])
+  }, [authUserId])
 
   const updateMovie = useCallback(async (id, updates) => {
     try {
@@ -153,6 +154,12 @@ export function useMovies() {
     }
   }, [])
 
+  // Check if current user can modify a movie
+  const canModifyMovie = useCallback((movie) => {
+    if (!authUserId) return false
+    return movie.user_id === authUserId
+  }, [authUserId])
+
   return {
     movies,
     loading,
@@ -166,6 +173,8 @@ export function useMovies() {
     toggleWatched,
     toggleFavorite,
     loadMore,
-    refetch: fetchMovies
+    refetch: fetchMovies,
+    canModifyMovie,
+    authUserId
   }
 }

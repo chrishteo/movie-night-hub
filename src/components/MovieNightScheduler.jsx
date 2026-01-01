@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useToast } from './Toast'
 import { getMovieNights, createMovieNight, deleteMovieNight } from '../lib/database'
 
-export default function MovieNightScheduler({ movies, onClose, darkMode }) {
+export default function MovieNightScheduler({ movies, onClose, darkMode, authUserId = null }) {
   const { addToast } = useToast()
   const [scheduledNights, setScheduledNights] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +41,8 @@ export default function MovieNightScheduler({ movies, onClose, darkMode }) {
     if (!movie) return
 
     try {
-      const night = await createMovieNight(movie.id, movie.title, selectedDate, notes)
+      // Pass authUserId for RLS security
+      const night = await createMovieNight(movie.id, movie.title, selectedDate, notes, authUserId)
       setScheduledNights(prev => [...prev, night].sort((a, b) =>
         new Date(a.scheduled_date) - new Date(b.scheduled_date)
       ))

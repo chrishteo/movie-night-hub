@@ -89,7 +89,7 @@ export async function getMovies(page = 0) {
   }
 }
 
-export async function addMovie(movie) {
+export async function addMovie(movie, userId = null) {
   const { data, error } = await supabase
     .from('movies')
     .insert([{
@@ -106,6 +106,7 @@ export async function addMovie(movie) {
       favorite: movie.favorite || false,
       notes: movie.notes || null,
       added_by: movie.added_by,
+      user_id: userId, // Link to authenticated user
       trailer_url: movie.trailer_url || null,
       tmdb_rating: movie.tmdb_rating || null,
       "cast": movie.cast || [],
@@ -191,15 +192,24 @@ export async function getVotes() {
   return data
 }
 
-export async function castVote(movieId, userName, vote) {
+export async function castVote(movieId, userName, vote, userId = null) {
+  // If userId provided, use secure user_id based voting
+  // Otherwise fall back to user_name (legacy/unauthenticated)
+  const voteData = {
+    movie_id: movieId,
+    user_name: userName,
+    vote
+  }
+
+  if (userId) {
+    voteData.user_id = userId
+  }
+
   const { data, error } = await supabase
     .from('votes')
-    .upsert([{
-      movie_id: movieId,
-      user_name: userName,
-      vote
-    }], {
-      onConflict: 'movie_id,user_name'
+    .upsert([voteData], {
+      // Use user_id if available, otherwise fall back to user_name
+      onConflict: userId ? 'movie_id,user_id' : 'movie_id,user_name'
     })
     .select()
     .single()
@@ -288,10 +298,10 @@ export async function getCollections() {
   return data
 }
 
-export async function createCollection(name, emoji = '📁', color = 'purple') {
+export async function createCollection(name, emoji = '📁', color = 'purple', userId = null) {
   const { data, error } = await supabase
     .from('collections')
-    .insert([{ name, emoji, color }])
+    .insert([{ name, emoji, color, user_id: userId }])
     .select()
     .single()
 
@@ -363,14 +373,15 @@ export async function getMovieNights() {
   return data
 }
 
-export async function createMovieNight(movieId, movieTitle, scheduledDate, notes = '') {
+export async function createMovieNight(movieId, movieTitle, scheduledDate, notes = '', userId = null) {
   const { data, error } = await supabase
     .from('movie_nights')
     .insert([{
       movie_id: movieId,
       movie_title: movieTitle,
       scheduled_date: scheduledDate,
-      notes
+      notes,
+      user_id: userId
     }])
     .select()
     .single()

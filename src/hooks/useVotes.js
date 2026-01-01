@@ -6,7 +6,7 @@ import {
   subscribeToVotes
 } from '../lib/database'
 
-export function useVotes() {
+export function useVotes(authUserId = null) {
   const [votes, setVotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -50,17 +50,23 @@ export function useVotes() {
 
   const castVote = useCallback(async (movieId, userName, vote) => {
     try {
-      const newVote = await castVoteDb(movieId, userName, vote)
-      // Update local state immediately
+      // Pass authUserId for RLS security
+      const newVote = await castVoteDb(movieId, userName, vote, authUserId)
+      // Update local state - use user_id if available, otherwise user_name
       setVotes(prev => [
-        ...prev.filter(v => !(v.movie_id === movieId && v.user_name === userName)),
+        ...prev.filter(v => {
+          if (authUserId && v.user_id) {
+            return !(v.movie_id === movieId && v.user_id === authUserId)
+          }
+          return !(v.movie_id === movieId && v.user_name === userName)
+        }),
         newVote
       ])
     } catch (err) {
       setError(err.message)
       throw err
     }
-  }, [])
+  }, [authUserId])
 
   const clearAllVotes = useCallback(async () => {
     try {

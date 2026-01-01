@@ -1,6 +1,8 @@
-import { GENRES, MOODS, STREAMING } from '../shared/constants.js';
+import { GENRES, MOODS, STREAMING } from '../shared/constants.js'
+import { verifyAuth } from './auth-verify.js'
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_API_KEY = process.env.TMDB_API_KEY
+const isDev = process.env.NODE_ENV !== 'production'
 
 // Fetch poster from TMDB
 async function getTMDBPoster(title, year) {
@@ -25,19 +27,25 @@ async function getTMDBPoster(title, year) {
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { movies } = req.body;
+  // Verify authentication (optional but logged)
+  const user = await verifyAuth(req)
+  if (isDev && user) {
+    console.log('Recommendations request from:', user.email)
+  }
+
+  const { movies } = req.body
 
   if (!movies || !Array.isArray(movies)) {
-    return res.status(400).json({ error: 'Movies array is required' });
+    return res.status(400).json({ error: 'Movies array is required' })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'Anthropic API key not configured' });
+    return res.status(500).json({ error: 'Anthropic API key not configured' })
   }
 
   // Limit to 15 movies and use concise format to reduce tokens

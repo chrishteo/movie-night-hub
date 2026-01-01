@@ -42,6 +42,9 @@ export default function App() {
   })
 
   // Data hooks - must be called unconditionally
+  // Pass auth user ID for RLS security
+  const authUserId = user?.id || null
+
   const {
     movies,
     loading: moviesLoading,
@@ -53,8 +56,9 @@ export default function App() {
     deleteMovie,
     toggleWatched,
     toggleFavorite,
-    loadMore
-  } = useMovies()
+    loadMore,
+    canModifyMovie
+  } = useMovies(authUserId)
 
   const {
     users,
@@ -69,7 +73,7 @@ export default function App() {
   const {
     votes,
     castVote
-  } = useVotes()
+  } = useVotes(authUserId)
 
   // UI state
   const [filters, setFilters] = useState({
@@ -664,6 +668,7 @@ export default function App() {
         selectedMovies={selectedMovies}
         onToggleSelect={toggleMovieSelection}
         viewMode={viewMode}
+        canModifyMovie={canModifyMovie}
       />
 
       {/* Load More Button */}
@@ -819,6 +824,7 @@ export default function App() {
           movies={movies}
           onClose={() => setShowCollections(false)}
           darkMode={darkMode}
+          authUserId={authUserId}
         />
       )}
 
@@ -827,6 +833,7 @@ export default function App() {
           movies={movies}
           onClose={() => setShowScheduler(false)}
           darkMode={darkMode}
+          authUserId={authUserId}
         />
       )}
 

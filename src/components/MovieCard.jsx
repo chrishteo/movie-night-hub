@@ -22,7 +22,8 @@ export default function MovieCard({
   darkMode,
   bulkSelectMode,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
+  canModify = true
 }) {
   // Find user who added this movie
   const addedByUser = users?.find(u => u.name === movie.added_by)
@@ -145,18 +146,23 @@ export default function MovieCard({
               >
                 {movie.favorite ? '♥' : '♡'}
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(movie); }}
-                className="text-xs text-gray-400 hover:text-gray-200"
-              >
-                ✏️
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(movie.id); }}
-                className="text-xs text-red-400 hover:text-red-300"
-              >
-                ✕
-              </button>
+              {/* Only show edit/delete if user can modify this movie */}
+              {canModify && (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(movie); }}
+                    className="text-xs text-gray-400 hover:text-gray-200"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(movie.id); }}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    ✕
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <p className="text-xs opacity-70 truncate">

@@ -22,7 +22,7 @@ const COLLECTION_COLORS = {
 
 const COLLECTION_EMOJIS = ['📁', '🎬', '🍿', '🎃', '❤️', '🌙', '☀️', '🎄', '🎉', '👻', '🦸', '🔥', '💫', '🌟']
 
-export default function Collections({ movies, onClose, darkMode }) {
+export default function Collections({ movies, onClose, darkMode, authUserId = null }) {
   const { addToast } = useToast()
   const [collections, setCollections] = useState([])
   const [loading, setLoading] = useState(true)
@@ -84,7 +84,8 @@ export default function Collections({ movies, onClose, darkMode }) {
   const handleCreateCollection = async () => {
     if (!newName.trim()) return
     try {
-      const collection = await createCollection(newName.trim(), newEmoji, newColor)
+      // Pass authUserId for RLS security
+      const collection = await createCollection(newName.trim(), newEmoji, newColor, authUserId)
       setCollections(prev => [collection, ...prev])
       setNewName('')
       setNewEmoji('📁')

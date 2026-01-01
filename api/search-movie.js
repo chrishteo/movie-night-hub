@@ -1,5 +1,6 @@
 import { GENRES, MOODS, STREAMING } from '../shared/constants.js'
 import { setRateLimited, isRateLimited, getRateLimitStatus } from './ai-status.js'
+import { verifyAuth } from './auth-verify.js'
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const OMDB_API_KEY = process.env.OMDB_API_KEY
@@ -218,6 +219,12 @@ export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // Verify authentication (optional for this endpoint, but logged for monitoring)
+  const user = await verifyAuth(req)
+  if (isDev && user) {
+    console.log('Authenticated request from:', user.email)
   }
 
   const { title, aiOnly = false, tmdbData = null } = req.body

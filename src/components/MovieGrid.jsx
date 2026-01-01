@@ -11,7 +11,8 @@ function MovieListRow({
   darkMode,
   bulkSelectMode,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
+  canModify = true
 }) {
   const card = darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
   const border = darkMode ? 'border-gray-700' : 'border-gray-200'
@@ -156,13 +157,16 @@ function MovieListRow({
         >
           ♥
         </button>
-        <button
-          onClick={() => onDelete(movie.id)}
-          className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-gray-700 text-gray-400 hover:text-red-400 hover:bg-red-500/20' : 'bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-          title="Delete"
-        >
-          🗑
-        </button>
+        {/* Only show delete button if user can modify this movie */}
+        {canModify && (
+          <button
+            onClick={() => onDelete(movie.id)}
+            className={`p-2 rounded-lg transition-colors ${darkMode ? 'bg-gray-700 text-gray-400 hover:text-red-400 hover:bg-red-500/20' : 'bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+            title="Delete"
+          >
+            🗑
+          </button>
+        )}
       </div>
     </div>
   )
@@ -182,7 +186,8 @@ export default function MovieGrid({
   bulkSelectMode,
   selectedMovies,
   onToggleSelect,
-  viewMode = 'grid'
+  viewMode = 'grid',
+  canModifyMovie = () => true // Default to allowing modifications
 }) {
   // Show skeleton loaders while loading
   if (loading) {
@@ -226,6 +231,7 @@ export default function MovieGrid({
             bulkSelectMode={bulkSelectMode}
             isSelected={selectedMovies?.has(movie.id)}
             onToggleSelect={onToggleSelect}
+            canModify={canModifyMovie(movie)}
           />
         ))}
       </div>
@@ -250,6 +256,7 @@ export default function MovieGrid({
           bulkSelectMode={bulkSelectMode}
           isSelected={selectedMovies?.has(movie.id)}
           onToggleSelect={onToggleSelect}
+          canModify={canModifyMovie(movie)}
         />
       ))}
     </div>
