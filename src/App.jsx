@@ -31,6 +31,7 @@ import OfflineIndicator from './components/OfflineIndicator'
 import InstallPrompt from './components/InstallPrompt'
 
 export default function App() {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { addToast } = useToast()
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth()
 
@@ -40,24 +41,7 @@ export default function App() {
     return saved !== null ? JSON.parse(saved) : true
   })
 
-  // Show loading screen while checking auth
-  if (authLoading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <Auth darkMode={darkMode} />
-  }
-
-  // Data hooks
+  // Data hooks - must be called unconditionally
   const {
     movies,
     loading: moviesLoading,
@@ -80,7 +64,7 @@ export default function App() {
     addUser,
     updateUser,
     deleteUser
-  } = useUsers()
+  } = useUsers(user)
 
   const {
     votes,
@@ -145,6 +129,23 @@ export default function App() {
       }
     }
   }, [movies])
+
+  // Show loading screen while checking auth
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Auth darkMode={darkMode} />
+  }
 
   // Filter and sort movies
   const filteredMovies = sortMovies(

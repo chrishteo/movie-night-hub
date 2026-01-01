@@ -12,10 +12,33 @@ export async function getUsers() {
   return data
 }
 
-export async function addUser(name, avatar = '😊') {
+export async function addUser(name, avatar = '😊', authId = null) {
   const { data, error } = await supabase
     .from('users')
-    .insert([{ name, avatar }])
+    .insert([{ name, avatar, auth_id: authId }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserByAuthId(authId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('auth_id', authId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows found
+  return data
+}
+
+export async function linkUserToAuth(userId, authId) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ auth_id: authId })
+    .eq('id', userId)
     .select()
     .single()
 

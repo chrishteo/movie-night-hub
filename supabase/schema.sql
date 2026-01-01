@@ -1,9 +1,10 @@
 -- Movie Night Hub Database Schema
 -- Run this in your Supabase SQL Editor
 
--- Users table (simple, no auth)
+-- Users table (linked to Supabase Auth)
 CREATE TABLE users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  auth_id UUID UNIQUE, -- Links to Supabase Auth user
   name TEXT UNIQUE NOT NULL,
   avatar TEXT DEFAULT '😊',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
