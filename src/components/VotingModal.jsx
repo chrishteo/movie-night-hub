@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { getVoteTally, getUserVote, findWinner } from '../utils/helpers'
+import ParticipantSelector from './ParticipantSelector'
 
 export default function VotingModal({
   movies,
@@ -10,10 +12,29 @@ export default function VotingModal({
   onClose,
   darkMode
 }) {
-  const unwatched = movies.filter(m => !m.watched)
+  const [selectedUsers, setSelectedUsers] = useState(() => users.map(u => u.name))
+
+  // Filter movies by selected participants
+  const participantMovies = selectedUsers.length > 0
+    ? movies.filter(m => selectedUsers.includes(m.added_by))
+    : movies
+
+  const unwatched = participantMovies.filter(m => !m.watched)
+
+  const toggleUser = (userName) => {
+    setSelectedUsers(prev =>
+      prev.includes(userName)
+        ? prev.filter(u => u !== userName)
+        : [...prev, userName]
+    )
+  }
+
+  const selectAllUsers = () => setSelectedUsers(users.map(u => u.name))
+  const selectNoUsers = () => setSelectedUsers([])
 
   const handleDeclareWinner = () => {
-    const winner = findWinner(movies, votes, users)
+    // Find winner from participant movies only
+    const winner = findWinner(participantMovies, votes, users)
     if (winner) {
       onDeclareWinner(winner)
     }
@@ -28,6 +49,21 @@ export default function VotingModal({
         <h2 className="text-lg font-bold mb-2">
           🗳️ Vote as {currentUser}
         </h2>
+
+        {/* Participant Selector */}
+        {users.length > 0 && (
+          <ParticipantSelector
+            users={users}
+            selectedUsers={selectedUsers}
+            onToggleUser={toggleUser}
+            onSelectAll={selectAllUsers}
+            onSelectNone={selectNoUsers}
+            darkMode={darkMode}
+            label="Whose movies to vote on?"
+            showMovieCount={true}
+            movies={movies}
+          />
+        )}
 
         {unwatched.length === 0 ? (
           <p className="text-center py-8 opacity-50">No unwatched movies to vote on</p>

@@ -63,6 +63,7 @@ export function filterMovies(movies, filters, currentUser) {
       if (!titleMatch && !directorMatch) return false
     }
     if (filters.view === 'mine' && m.added_by !== currentUser) return false
+    if (filters.addedBy && m.added_by !== filters.addedBy) return false
     if (filters.genre && m.genre !== filters.genre) return false
     if (filters.mood && m.mood !== filters.mood) return false
     if (filters.watched === 'watched' && !m.watched) return false

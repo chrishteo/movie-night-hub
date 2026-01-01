@@ -6,11 +6,10 @@ export default function Header({
   users,
   currentUser,
   onUserChange,
-  onAddUser,
-  onDeleteUser,
   onUpdateUser,
   onSignOut,
   authEmail,
+  authUserId,
   darkMode,
   onToggleDarkMode
 }) {
@@ -18,16 +17,10 @@ export default function Header({
   const [editingAvatar, setEditingAvatar] = useState(false)
   const currentUserObj = users.find(u => u.name === currentUser)
 
-  const handleDeleteUser = () => {
-    if (users.length <= 1) {
-      alert('Cannot delete the last user!')
-      return
-    }
-    if (confirm(`Delete user "${currentUser}"?`)) {
-      onDeleteUser(currentUserObj.id, currentUser)
-    }
-    setShowUserMenu(false)
-  }
+  // Only show profiles linked to the current auth user
+  const myProfiles = authUserId
+    ? users.filter(u => u.auth_id === authUserId)
+    : users
 
   const handleAvatarChange = async (newAvatar) => {
     if (currentUserObj && onUpdateUser) {
@@ -64,25 +57,27 @@ export default function Header({
               <div className={`absolute right-0 top-10 z-20 rounded-lg shadow-xl min-w-[180px] ${
                 darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}>
-                {/* User list */}
-                <div className="p-1 border-b border-gray-700">
-                  {users.map(u => (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        onUserChange(u.name)
-                        setShowUserMenu(false)
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20 ${
-                        u.name === currentUser ? 'bg-purple-500/10' : ''
-                      }`}
-                    >
-                      <Avatar avatar={u.avatar} size="sm" />
-                      <span>{u.name}</span>
-                      {u.name === currentUser && <span className="ml-auto text-purple-400">✓</span>}
-                    </button>
-                  ))}
-                </div>
+                {/* User list - only show profiles linked to current auth user */}
+                {myProfiles.length > 1 && (
+                  <div className="p-1 border-b border-gray-700">
+                    {myProfiles.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          onUserChange(u.name)
+                          setShowUserMenu(false)
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20 ${
+                          u.name === currentUser ? 'bg-purple-500/10' : ''
+                        }`}
+                      >
+                        <Avatar avatar={u.avatar} size="sm" />
+                        <span>{u.name}</span>
+                        {u.name === currentUser && <span className="ml-auto text-purple-400">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* Actions */}
                 <div className="p-1">
                   <button
@@ -94,23 +89,6 @@ export default function Header({
                   >
                     <span>🎨</span>
                     <span>Change Avatar</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      onAddUser()
-                      setShowUserMenu(false)
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20 text-purple-400"
-                  >
-                    <span>+</span>
-                    <span>Add Person</span>
-                  </button>
-                  <button
-                    onClick={handleDeleteUser}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-red-500/20 text-red-400"
-                  >
-                    <span>−</span>
-                    <span>Remove {currentUser}</span>
                   </button>
                   {onSignOut && (
                     <>

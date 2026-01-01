@@ -155,9 +155,18 @@ export function useMovies(authUserId = null) {
   }, [])
 
   // Check if current user can modify a movie
-  const canModifyMovie = useCallback((movie) => {
+  // For backward compatibility, also check added_by name for movies without user_id
+  const canModifyMovie = useCallback((movie, currentUserName = null) => {
     if (!authUserId) return false
-    return movie.user_id === authUserId
+    // If movie has user_id, use that for ownership check
+    if (movie.user_id) {
+      return movie.user_id === authUserId
+    }
+    // Fallback: for legacy movies without user_id, check added_by name
+    if (currentUserName && movie.added_by) {
+      return movie.added_by === currentUserName
+    }
+    return false
   }, [authUserId])
 
   return {

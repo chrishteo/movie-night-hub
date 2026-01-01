@@ -1,15 +1,34 @@
 import { useState, useEffect, useCallback } from 'react'
+import ParticipantSelector from './ParticipantSelector'
 
 export default function SpinWheel({
   movies,
+  users = [],
   onClose,
   onMoviePicked,
   darkMode
 }) {
   const [spinning, setSpinning] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedUsers, setSelectedUsers] = useState(() => users.map(u => u.name))
 
-  const unwatched = movies.filter(m => !m.watched)
+  // Filter movies by selected participants
+  const participantMovies = selectedUsers.length > 0
+    ? movies.filter(m => selectedUsers.includes(m.added_by))
+    : movies
+
+  const unwatched = participantMovies.filter(m => !m.watched)
+
+  const toggleUser = (userName) => {
+    setSelectedUsers(prev =>
+      prev.includes(userName)
+        ? prev.filter(u => u !== userName)
+        : [...prev, userName]
+    )
+  }
+
+  const selectAllUsers = () => setSelectedUsers(users.map(u => u.name))
+  const selectNoUsers = () => setSelectedUsers([])
 
   const spin = useCallback(() => {
     if (unwatched.length === 0) return
@@ -41,9 +60,25 @@ export default function SpinWheel({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
-      <div className={`${card} rounded-lg p-6 w-full max-w-md text-center`}>
-        <h2 className="text-xl font-bold mb-4">🎡 Spin the Wheel</h2>
+      <div className={`${card} rounded-lg p-6 w-full max-w-md`}>
+        <h2 className="text-xl font-bold mb-4 text-center">🎡 Spin the Wheel</h2>
 
+        {/* Participant Selector */}
+        {users.length > 0 && (
+          <ParticipantSelector
+            users={users}
+            selectedUsers={selectedUsers}
+            onToggleUser={toggleUser}
+            onSelectAll={selectAllUsers}
+            onSelectNone={selectNoUsers}
+            darkMode={darkMode}
+            label="Whose movies to include?"
+            showMovieCount={true}
+            movies={movies}
+          />
+        )}
+
+        <div className="text-center">
         <div
           className={`w-40 h-40 mx-auto rounded-full border-8 border-purple-600 flex items-center justify-center mb-4 overflow-hidden ${
             spinning ? 'animate-spin' : ''
@@ -79,9 +114,12 @@ export default function SpinWheel({
 
         {unwatched.length === 0 && (
           <p className="text-yellow-400 text-sm mb-4">
-            No unwatched movies to pick from!
+            {selectedUsers.length === 0
+              ? 'Select at least one person above!'
+              : 'No unwatched movies to pick from!'}
           </p>
         )}
+        </div>
 
         <div className="flex gap-2">
           <button

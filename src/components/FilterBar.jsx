@@ -3,7 +3,8 @@ import { GENRES, MOODS, STREAMING, SORT_OPTIONS } from '../utils/constants'
 export default function FilterBar({
   filters,
   onFilterChange,
-  darkMode
+  darkMode,
+  users = []
 }) {
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
@@ -49,6 +50,17 @@ export default function FilterBar({
         <option value="">Streaming</option>
         {STREAMING.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
+
+      {users.length > 0 && (
+        <select
+          value={filters.addedBy || ''}
+          onChange={(e) => onFilterChange('addedBy', e.target.value)}
+          className={`px-2 py-1 rounded text-sm ${card} ${border} border`}
+        >
+          <option value="">Added by</option>
+          {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+        </select>
+      )}
 
       <select
         value={filters.watched}

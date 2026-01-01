@@ -168,9 +168,9 @@ export default function App() {
     filters.sortBy
   )
 
-  // Get recently watched movies (last 3)
+  // Get recently watched movies (last 3) - only movies added by current user
   const recentlyWatched = movies
-    .filter(m => m.watched && m.watched_at)
+    .filter(m => m.watched && m.watched_at && m.added_by === currentUser)
     .sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at))
     .slice(0, 3)
 
@@ -266,6 +266,9 @@ export default function App() {
     }
   }
 
+  // Wrapper for canModifyMovie that includes currentUser name for legacy movies
+  const canModify = (movie) => canModifyMovie(movie, currentUser)
+
   // Bulk action handlers
   const toggleMovieSelection = (id) => {
     setSelectedMovies(prev => {
@@ -279,8 +282,10 @@ export default function App() {
     })
   }
 
+  // Only select movies the user can modify
   const selectAllMovies = () => {
-    setSelectedMovies(new Set(filteredMovies.map(m => m.id)))
+    const ownedMovies = filteredMovies.filter(m => canModify(m))
+    setSelectedMovies(new Set(ownedMovies.map(m => m.id)))
   }
 
   const clearSelection = () => {
@@ -308,20 +313,35 @@ export default function App() {
   }
 
   const handleBulkDelete = async () => {
-    const count = selectedMovies.size
+    // Filter to only movies the user can delete
+    const deletableMovies = [...selectedMovies].filter(id => {
+      const movie = movies.find(m => m.id === id)
+      return movie && canModify(movie)
+    })
+
+    if (deletableMovies.length === 0) {
+      addToast('You can only delete movies you added', 'error')
+      return
+    }
+
     setDeleteConfirm({
       isOpen: true,
       movieId: 'bulk',
-      movieTitle: `${count} selected movies`
+      movieTitle: `${deletableMovies.length} of your movies`
     })
   }
 
   const confirmBulkDelete = async () => {
-    const count = selectedMovies.size
     setDeleteConfirm({ isOpen: false, movieId: null, movieTitle: '' })
 
+    // Only delete movies the user owns
+    const deletableIds = [...selectedMovies].filter(id => {
+      const movie = movies.find(m => m.id === id)
+      return movie && canModify(movie)
+    })
+
     let failed = 0
-    for (const id of selectedMovies) {
+    for (const id of deletableIds) {
       try {
         await deleteMovie(id)
       } catch (err) {
@@ -330,9 +350,9 @@ export default function App() {
       }
     }
     if (failed > 0) {
-      addToast(`Deleted ${count - failed} movies, ${failed} failed`, 'error')
+      addToast(`Deleted ${deletableIds.length - failed} movies, ${failed} failed`, 'error')
     } else {
-      addToast(`Deleted ${count} movies`, 'success')
+      addToast(`Deleted ${deletableIds.length} movies`, 'success')
     }
     clearSelection()
   }
@@ -389,11 +409,10 @@ export default function App() {
         users={users}
         currentUser={currentUser}
         onUserChange={selectUser}
-        onAddUser={() => setShowAddUser(true)}
-        onDeleteUser={deleteUser}
         onUpdateUser={updateUser}
         onSignOut={signOut}
         authEmail={user?.email}
+        authUserId={authUserId}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
       />
@@ -418,37 +437,47 @@ export default function App() {
       )}
 
       {/* Bulk Action Bar */}
-      {bulkSelectMode && (
-        <div className={`${card} border ${border} rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap`}>
-          <span className="font-medium">{selectedMovies.size} selected</span>
-          <button
-            onClick={selectAllMovies}
-            className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white"
-          >
-            Select All ({filteredMovies.length})
-          </button>
-          <button
-            onClick={handleBulkMarkWatched}
-            disabled={selectedMovies.size === 0}
-            className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-          >
-            ✓ Mark Watched
-          </button>
-          <button
-            onClick={handleBulkDelete}
-            disabled={selectedMovies.size === 0}
-            className="px-3 py-1.5 rounded text-sm bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-          >
-            🗑️ Delete
-          </button>
-          <button
-            onClick={clearSelection}
-            className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white ml-auto"
-          >
-            ✕ Cancel
-          </button>
-        </div>
-      )}
+      {bulkSelectMode && (() => {
+        const ownedCount = filteredMovies.filter(m => canModify(m)).length
+        const selectedDeletable = [...selectedMovies].filter(id => {
+          const movie = movies.find(m => m.id === id)
+          return movie && canModify(movie)
+        }).length
+
+        return (
+          <div className={`${card} border ${border} rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap`}>
+            <span className="font-medium">{selectedMovies.size} selected</span>
+            <button
+              onClick={selectAllMovies}
+              className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white"
+              title="Select all movies you can modify"
+            >
+              Select Mine ({ownedCount})
+            </button>
+            <button
+              onClick={handleBulkMarkWatched}
+              disabled={selectedMovies.size === 0}
+              className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+            >
+              ✓ Mark Watched
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={selectedDeletable === 0}
+              className="px-3 py-1.5 rounded text-sm bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+              title={selectedDeletable < selectedMovies.size ? `Can only delete ${selectedDeletable} of ${selectedMovies.size} (your movies)` : ''}
+            >
+              🗑️ Delete {selectedDeletable > 0 && selectedDeletable < selectedMovies.size ? `(${selectedDeletable})` : ''}
+            </button>
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1.5 rounded text-sm bg-gray-600 hover:bg-gray-500 text-white ml-auto"
+            >
+              ✕ Cancel
+            </button>
+          </div>
+        )
+      })()}
 
       {/* Action Buttons - Desktop only */}
       <div className="hidden md:flex flex-wrap gap-2 mb-3">
@@ -592,6 +621,7 @@ export default function App() {
           filters={filters}
           onFilterChange={handleFilterChange}
           darkMode={darkMode}
+          users={users}
         />
       </div>
 
@@ -668,7 +698,7 @@ export default function App() {
         selectedMovies={selectedMovies}
         onToggleSelect={toggleMovieSelection}
         viewMode={viewMode}
-        canModifyMovie={canModifyMovie}
+        canModifyMovie={canModify}
       />
 
       {/* Load More Button */}
@@ -745,7 +775,8 @@ export default function App() {
 
       {showWheel && (
         <SpinWheel
-          movies={filteredMovies}
+          movies={movies}
+          users={users}
           onClose={() => setShowWheel(false)}
           onMoviePicked={handleMoviePicked}
           darkMode={darkMode}
@@ -754,7 +785,7 @@ export default function App() {
 
       {showVoting && (
         <VotingModal
-          movies={filteredMovies}
+          movies={movies}
           votes={votes}
           users={users}
           currentUser={currentUser}
