@@ -73,13 +73,19 @@ export default function App() {
 
   // UI state
   const [filters, setFilters] = useState({
-    view: 'all',
+    view: 'mine',
     genre: '',
     mood: '',
     streaming: '',
     watched: 'all',
     favorites: false,
     sortBy: 'created_at'
+  })
+
+  // View mode: 'grid' or 'list'
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('movienight-viewmode')
+    return saved || 'grid'
   })
 
   // Modal states
@@ -118,6 +124,11 @@ export default function App() {
     }
   }, [darkMode])
 
+  // Save view mode preference
+  useEffect(() => {
+    localStorage.setItem('movienight-viewmode', viewMode)
+  }, [viewMode])
+
   // Keep selectedMovie in sync with movies array
   useEffect(() => {
     if (selectedMovie) {
@@ -152,6 +163,12 @@ export default function App() {
     filterMovies(movies, filters, currentUser),
     filters.sortBy
   )
+
+  // Get recently watched movies (last 3)
+  const recentlyWatched = movies
+    .filter(m => m.watched && m.watched_at)
+    .sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at))
+    .slice(0, 3)
 
   // Handlers
   const handleFilterChange = (key, value) => {
@@ -574,7 +591,64 @@ export default function App() {
         />
       </div>
 
-      {/* Movie Grid */}
+      {/* Recently Watched Section */}
+      {recentlyWatched.length > 0 && (
+        <div className={`${card} border ${border} rounded-lg p-4 mb-4`}>
+          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+            <span>📺</span> Recently Watched
+          </h3>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {recentlyWatched.map(movie => (
+              <button
+                key={movie.id}
+                onClick={() => setSelectedMovie(movie)}
+                className="flex-shrink-0 group"
+              >
+                {movie.poster ? (
+                  <img
+                    src={movie.poster}
+                    alt={movie.title}
+                    className="w-16 h-24 object-cover rounded shadow-lg group-hover:ring-2 ring-purple-500 transition-all"
+                  />
+                ) : (
+                  <div className={`w-16 h-24 rounded flex items-center justify-center text-2xl ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    🎬
+                  </div>
+                )}
+                <p className="text-xs mt-1 truncate w-16 opacity-70">{movie.title}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* View Mode Toggle */}
+      <div className="flex justify-end mb-3">
+        <div className={`inline-flex rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} p-1`}>
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-purple-600 text-white'
+                : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ▦ Grid
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              viewMode === 'list'
+                ? 'bg-purple-600 text-white'
+                : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ☰ List
+          </button>
+        </div>
+      </div>
+
+      {/* Movie Grid/List */}
       <MovieGrid
         movies={filteredMovies}
         users={users}
@@ -589,6 +663,7 @@ export default function App() {
         bulkSelectMode={bulkSelectMode}
         selectedMovies={selectedMovies}
         onToggleSelect={toggleMovieSelection}
+        viewMode={viewMode}
       />
 
       {/* Load More Button */}
