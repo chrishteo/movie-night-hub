@@ -11,7 +11,11 @@ export default function Header({
   authEmail,
   authUserId,
   darkMode,
-  onToggleDarkMode
+  onToggleDarkMode,
+  isAdmin,
+  onOpenAdmin,
+  onOpenBugReport,
+  onOpenMyBugReports
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [editingAvatar, setEditingAvatar] = useState(false)
@@ -90,6 +94,26 @@ export default function Header({
                     <span>🎨</span>
                     <span>Change Avatar</span>
                   </button>
+                  <button
+                    onClick={() => {
+                      onOpenBugReport?.()
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20"
+                  >
+                    <span>🐛</span>
+                    <span>Report Bug</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onOpenMyBugReports?.()
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20"
+                  >
+                    <span>📋</span>
+                    <span>My Bug Reports</span>
+                  </button>
                   {onSignOut && (
                     <>
                       <div className={`my-1 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`} />
@@ -115,6 +139,20 @@ export default function Header({
             </>
           )}
         </div>
+
+        {isAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className={`px-2 py-1 rounded border ${
+              darkMode
+                ? 'bg-purple-600 border-purple-500 hover:bg-purple-500'
+                : 'bg-purple-500 border-purple-400 hover:bg-purple-400'
+            }`}
+            title="Admin Panel"
+          >
+            Admin
+          </button>
+        )}
 
         <button
           onClick={onToggleDarkMode}

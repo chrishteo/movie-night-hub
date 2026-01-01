@@ -3,6 +3,7 @@ import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
 import { useAuth } from './hooks/useAuth.jsx'
+import { useAdmin } from './hooks/useAdmin'
 import { filterMovies, sortMovies } from './utils/helpers'
 import { useToast } from './components/Toast'
 
@@ -29,6 +30,10 @@ import Collections from './components/Collections'
 import MovieNightScheduler from './components/MovieNightScheduler'
 import OfflineIndicator from './components/OfflineIndicator'
 import InstallPrompt from './components/InstallPrompt'
+import AdminPanel from './components/AdminPanel'
+import BugReportModal from './components/BugReportModal'
+import MyBugReports from './components/MyBugReports'
+import AnnouncementBanner from './components/AnnouncementBanner'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -75,6 +80,23 @@ export default function App() {
     castVote
   } = useVotes(authUserId)
 
+  const {
+    isAdmin,
+    announcements,
+    bugReports,
+    fetchAnnouncements,
+    addAnnouncement,
+    editAnnouncement,
+    removeAnnouncement,
+    fetchBugReports,
+    submitBugReport,
+    editBugReport,
+    removeBugReport,
+    toggleUserAdmin,
+    removeUser,
+    removeMovie
+  } = useAdmin(authUserId)
+
   // UI state
   const [filters, setFilters] = useState({
     view: 'mine',
@@ -112,6 +134,9 @@ export default function App() {
   const [duplicateConfirm, setDuplicateConfirm] = useState({ isOpen: false, movieData: null, existingMovie: null })
   const [bulkSelectMode, setBulkSelectMode] = useState(false)
   const [selectedMovies, setSelectedMovies] = useState(new Set())
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
+  const [showBugReport, setShowBugReport] = useState(false)
+  const [showMyBugReports, setShowMyBugReports] = useState(false)
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -400,6 +425,9 @@ export default function App() {
       {/* Offline Indicator */}
       <OfflineIndicator />
 
+      {/* Announcements Banner */}
+      <AnnouncementBanner announcements={announcements} />
+
       {/* Effects */}
       {showConfetti && <Confetti />}
       {winner && <WinnerOverlay movie={winner} onClose={() => setWinner(null)} />}
@@ -415,6 +443,10 @@ export default function App() {
         authUserId={authUserId}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
+        isAdmin={isAdmin}
+        onOpenAdmin={() => setShowAdminPanel(true)}
+        onOpenBugReport={() => setShowBugReport(true)}
+        onOpenMyBugReports={() => setShowMyBugReports(true)}
       />
 
       {/* Current Movie of the Week Banner */}
@@ -904,6 +936,109 @@ export default function App() {
         onCancel={() => setDuplicateConfirm({ isOpen: false, movieData: null, existingMovie: null })}
         darkMode={darkMode}
       />
+
+      {/* Admin Panel */}
+      {showAdminPanel && isAdmin && (
+        <AdminPanel
+          onClose={() => setShowAdminPanel(false)}
+          darkMode={darkMode}
+          users={users}
+          movies={movies}
+          currentUserId={users.find(u => u.name === currentUser)?.id}
+          onToggleUserAdmin={async (userId, makeAdmin) => {
+            try {
+              await toggleUserAdmin(userId, makeAdmin)
+              addToast(makeAdmin ? 'User is now an admin' : 'Admin access removed', 'success')
+            } catch (err) {
+              addToast('Failed to update admin status', 'error')
+            }
+          }}
+          onDeleteUser={async (userId) => {
+            try {
+              await removeUser(userId)
+              addToast('User deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete user', 'error')
+            }
+          }}
+          onDeleteMovie={async (movieId) => {
+            try {
+              await removeMovie(movieId)
+              addToast('Movie deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete movie', 'error')
+            }
+          }}
+          announcements={announcements}
+          onFetchAnnouncements={fetchAnnouncements}
+          onAddAnnouncement={async (title, message, type, expiresAt) => {
+            try {
+              await addAnnouncement(title, message, type, expiresAt, users.find(u => u.name === currentUser)?.id)
+              addToast('Announcement created', 'success')
+            } catch (err) {
+              addToast('Failed to create announcement', 'error')
+            }
+          }}
+          onEditAnnouncement={async (id, updates) => {
+            try {
+              await editAnnouncement(id, updates)
+              addToast('Announcement updated', 'success')
+            } catch (err) {
+              addToast('Failed to update announcement', 'error')
+            }
+          }}
+          onDeleteAnnouncement={async (id) => {
+            try {
+              await removeAnnouncement(id)
+              addToast('Announcement deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete announcement', 'error')
+            }
+          }}
+          bugReports={bugReports}
+          onFetchBugReports={fetchBugReports}
+          onEditBugReport={async (id, updates) => {
+            try {
+              await editBugReport(id, updates)
+              addToast('Bug report updated', 'success')
+            } catch (err) {
+              addToast('Failed to update bug report', 'error')
+            }
+          }}
+          onDeleteBugReport={async (id) => {
+            try {
+              await removeBugReport(id)
+              addToast('Bug report deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete bug report', 'error')
+            }
+          }}
+        />
+      )}
+
+      {/* Bug Report Modal */}
+      {showBugReport && (
+        <BugReportModal
+          onClose={() => setShowBugReport(false)}
+          onSubmit={async (title, description) => {
+            const userProfile = users.find(u => u.name === currentUser)
+            await submitBugReport(title, description, userProfile?.id, currentUser)
+            addToast('Bug report submitted. Thank you!', 'success')
+          }}
+          darkMode={darkMode}
+        />
+      )}
+
+      {/* My Bug Reports */}
+      {showMyBugReports && (
+        <MyBugReports
+          onClose={() => setShowMyBugReports(false)}
+          bugReports={bugReports}
+          onFetchBugReports={fetchBugReports}
+          userId={users.find(u => u.name === currentUser)?.id}
+          darkMode={darkMode}
+        />
+      )}
 
       {/* PWA Install Prompt */}
       <InstallPrompt darkMode={darkMode} />

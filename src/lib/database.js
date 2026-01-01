@@ -410,3 +410,174 @@ export async function deleteMovieNight(id) {
 
   if (error) throw error
 }
+
+// ============ ADMIN ============
+
+export async function checkIsAdmin(authId) {
+  if (!authId) return false
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('auth_id', authId)
+    .single()
+
+  if (error) return false
+  return data?.is_admin === true
+}
+
+export async function setUserAdmin(userId, isAdmin) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ is_admin: isAdmin })
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteUserAsAdmin(userId) {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId)
+
+  if (error) throw error
+}
+
+export async function deleteMovieAsAdmin(movieId) {
+  const { error } = await supabase
+    .from('movies')
+    .delete()
+    .eq('id', movieId)
+
+  if (error) throw error
+}
+
+// ============ ANNOUNCEMENTS ============
+
+export async function getAnnouncements(activeOnly = true) {
+  let query = supabase
+    .from('announcements')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (activeOnly) {
+    query = query.eq('active', true)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  return data
+}
+
+export async function createAnnouncement(title, message, type = 'info', expiresAt = null, createdBy = null) {
+  const { data, error } = await supabase
+    .from('announcements')
+    .insert([{
+      title,
+      message,
+      type,
+      expires_at: expiresAt,
+      created_by: createdBy
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateAnnouncement(id, updates) {
+  const { data, error } = await supabase
+    .from('announcements')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteAnnouncement(id) {
+  const { error } = await supabase
+    .from('announcements')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+// ============ BUG REPORTS ============
+
+export async function getBugReports(userId = null) {
+  let query = supabase
+    .from('bug_reports')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  // If userId provided, filter to that user's reports (for non-admins)
+  if (userId) {
+    query = query.eq('user_id', userId)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  return data
+}
+
+export async function createBugReport(title, description, userId = null, userName = null) {
+  const { data, error } = await supabase
+    .from('bug_reports')
+    .insert([{
+      title,
+      description,
+      user_id: userId,
+      user_name: userName
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateBugReport(id, updates) {
+  const updateData = { ...updates }
+
+  // Set resolved_at when status changes to resolved or closed
+  if (updates.status === 'resolved' || updates.status === 'closed') {
+    updateData.resolved_at = new Date().toISOString()
+  }
+
+  const { data, error } = await supabase
+    .from('bug_reports')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteBugReport(id) {
+  const { error } = await supabase
+    .from('bug_reports')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export function subscribeToAnnouncements(callback) {
+  return supabase
+    .channel('announcements-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, callback)
+    .subscribe()
+}
