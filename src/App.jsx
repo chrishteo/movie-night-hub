@@ -4,6 +4,7 @@ import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
 import { useAuth } from './hooks/useAuth.jsx'
 import { useAdmin } from './hooks/useAdmin'
+import { useTutorial } from './hooks/useTutorial'
 import { filterMovies, sortMovies } from './utils/helpers'
 import { useToast } from './components/Toast'
 
@@ -34,6 +35,7 @@ import AdminPanel from './components/AdminPanel'
 import BugReportModal from './components/BugReportModal'
 import MyBugReports from './components/MyBugReports'
 import AnnouncementBanner from './components/AnnouncementBanner'
+import GuidedTour from './components/GuidedTour'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -96,6 +98,14 @@ export default function App() {
     removeUser,
     removeMovie
   } = useAdmin(authUserId)
+
+  // Tutorial state
+  const {
+    showTour,
+    completeTutorial,
+    skipTour,
+    startTour
+  } = useTutorial()
 
   // UI state
   const [filters, setFilters] = useState({
@@ -447,6 +457,7 @@ export default function App() {
         onOpenAdmin={() => setShowAdminPanel(true)}
         onOpenBugReport={() => setShowBugReport(true)}
         onOpenMyBugReports={() => setShowMyBugReports(true)}
+        onStartTutorial={startTour}
       />
 
       {/* Current Movie of the Week Banner */}
@@ -546,18 +557,21 @@ export default function App() {
         <button
           onClick={() => setShowAddMovie(true)}
           className="px-3 py-1.5 rounded text-sm bg-purple-600 hover:bg-purple-700 text-white"
+          data-tour="add-movie"
         >
           + Add
         </button>
         <button
           onClick={() => setShowWheel(true)}
           className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white"
+          data-tour="spin-wheel"
         >
           🎡
         </button>
         <button
           onClick={() => setShowVoting(true)}
           className="px-3 py-1.5 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white"
+          data-tour="voting"
         >
           🗳️
         </button>
@@ -648,7 +662,7 @@ export default function App() {
       </div>
 
       {/* Filter Bar - Collapsible on mobile */}
-      <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
+      <div className={`${showFilters ? 'block' : 'hidden'} md:block`} data-tour="filters">
         <FilterBar
           filters={filters}
           onFilterChange={handleFilterChange}
@@ -715,6 +729,7 @@ export default function App() {
       </div>
 
       {/* Movie Grid/List */}
+      <div data-tour="movie-card">
       <MovieGrid
         movies={filteredMovies}
         users={users}
@@ -732,6 +747,7 @@ export default function App() {
         viewMode={viewMode}
         canModifyMovie={canModify}
       />
+      </div>
 
       {/* Load More Button */}
       {hasMore && !moviesLoading && (
@@ -1042,6 +1058,15 @@ export default function App() {
 
       {/* PWA Install Prompt */}
       <InstallPrompt darkMode={darkMode} />
+
+      {/* Guided Tour */}
+      {showTour && (
+        <GuidedTour
+          onComplete={completeTutorial}
+          onSkip={skipTour}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   )
 }

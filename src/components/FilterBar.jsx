@@ -1,10 +1,12 @@
 import { GENRES, MOODS, STREAMING, SORT_OPTIONS } from '../utils/constants'
+import TooltipHint from './TooltipHint'
 
 export default function FilterBar({
   filters,
   onFilterChange,
   darkMode,
-  users = []
+  users = [],
+  showHints = true
 }) {
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
@@ -12,7 +14,14 @@ export default function FilterBar({
   const input = darkMode ? 'bg-gray-700' : 'bg-gray-100'
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
+    <div className="flex flex-wrap gap-2 mb-4 items-center">
+      {showHints && (
+        <TooltipHint
+          text="Use these filters to narrow down your movie list by genre, mood, streaming service, and more!"
+          darkMode={darkMode}
+          position="bottom"
+        />
+      )}
       <div className="relative">
         <input
           type="text"

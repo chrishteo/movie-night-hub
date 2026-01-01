@@ -29,6 +29,7 @@ export default function BottomNav({
         <button
           onClick={onSpinWheel}
           className="flex flex-col items-center justify-center flex-1 h-full text-green-500 active:bg-green-500/20 transition-colors"
+          data-tour="spin-wheel-mobile"
         >
           <span className="text-xl">🎡</span>
           <span className="text-xs mt-0.5">Spin</span>
@@ -36,6 +37,7 @@ export default function BottomNav({
         <button
           onClick={onVote}
           className="flex flex-col items-center justify-center flex-1 h-full text-blue-500 active:bg-blue-500/20 transition-colors"
+          data-tour="voting-mobile"
         >
           <span className="text-xl">🗳️</span>
           <span className="text-xs mt-0.5">Vote</span>
