@@ -34,7 +34,7 @@ export async function searchMovie(title) {
 
   const data = await response.json()
 
-  // Validate and normalize the response
+  // Return the data with AI status flags
   return {
     title: data.title || title,
     director: data.director || '',
@@ -49,8 +49,59 @@ export async function searchMovie(title) {
     tmdb_rating: data.tmdb_rating || null,
     cast: Array.isArray(data.cast) ? data.cast : [],
     imdb_rating: data.imdb_rating || null,
-    rotten_tomatoes: data.rotten_tomatoes || null
+    rotten_tomatoes: data.rotten_tomatoes || null,
+    // AI status flags
+    ai_pending: data.ai_pending || false,
+    ai_unavailable: data.ai_unavailable || false,
+    retry_after_seconds: data.retry_after_seconds || null
   }
+}
+
+// Request AI-only enrichment for a movie
+export async function enrichMovieWithAI(title) {
+  const response = await fetch('/api/search-movie', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ title, aiOnly: true })
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    return {
+      success: false,
+      rateLimited: response.status === 429,
+      retryAfterSeconds: error.retry_after_seconds || 60,
+      data: null
+    }
+  }
+
+  const data = await response.json()
+  return {
+    success: true,
+    rateLimited: false,
+    data: {
+      genre: GENRES.includes(data.genre) ? data.genre : '',
+      mood: MOODS.includes(data.mood) ? data.mood : '',
+      streaming: Array.isArray(data.streaming)
+        ? data.streaming.filter(s => STREAMING.includes(s))
+        : []
+    }
+  }
+}
+
+// Check AI service availability
+export async function checkAIStatus() {
+  try {
+    const response = await fetch('/api/ai-status')
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (err) {
+    console.error('Failed to check AI status:', err)
+  }
+  return { ai_available: true, remaining_seconds: 0 }
 }
 
 export async function getRecommendations(movies) {

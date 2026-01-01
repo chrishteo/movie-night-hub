@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { GENRES, MOODS, STREAMING } from '../utils/constants'
-import { searchMovie, searchTMDB } from '../lib/api'
+import { searchMovie, searchTMDB, enrichMovieWithAI, checkAIStatus } from '../lib/api'
 
 export default function MovieForm({
   movie,
@@ -35,6 +35,49 @@ export default function MovieForm({
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [searchError, setSearchError] = useState('')
 
+  // AI status state
+  const [aiPending, setAiPending] = useState(false)
+  const [aiAvailable, setAiAvailable] = useState(true)
+  const [enrichingAI, setEnrichingAI] = useState(false)
+
+  // Check AI status on mount
+  useEffect(() => {
+    checkAIStatus().then(status => {
+      setAiAvailable(status.ai_available)
+    })
+  }, [])
+
+  // Background AI enrichment
+  const tryEnrichWithAI = useCallback(async (movieTitle) => {
+    if (enrichingAI) return
+
+    setEnrichingAI(true)
+    try {
+      const result = await enrichMovieWithAI(movieTitle)
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          genre: result.data.genre || prev.genre,
+          mood: result.data.mood || prev.mood,
+          streaming: result.data.streaming?.length ? result.data.streaming : prev.streaming
+        }))
+        setAiPending(false)
+        setAiAvailable(true)
+      } else if (result.rateLimited) {
+        setAiAvailable(false)
+        // Schedule retry
+        setTimeout(() => {
+          setAiAvailable(true)
+          tryEnrichWithAI(movieTitle)
+        }, (result.retryAfterSeconds || 60) * 1000)
+      }
+    } catch (err) {
+      console.error('AI enrichment failed:', err)
+    } finally {
+      setEnrichingAI(false)
+    }
+  }, [enrichingAI])
+
   // Step 1: Search TMDB for multiple results
   const handleQuickSearch = async () => {
     if (!searchQuery.trim()) return
@@ -62,11 +105,13 @@ export default function MovieForm({
     setSearchResults([])
     setLoadingDetails(true)
     setSearchError('')
+    setAiPending(false)
 
     try {
       // Search with exact title and year for better accuracy
       const searchTitle = movie.year ? `${movie.title} ${movie.year}` : movie.title
       const info = await searchMovie(searchTitle)
+
       setFormData(prev => ({
         ...prev,
         title: info.title || movie.title,
@@ -82,6 +127,25 @@ export default function MovieForm({
         imdb_rating: info.imdb_rating || prev.imdb_rating,
         rotten_tomatoes: info.rotten_tomatoes || prev.rotten_tomatoes
       }))
+
+      // Handle AI pending state
+      if (info.ai_pending) {
+        setAiPending(true)
+        setAiAvailable(!info.ai_unavailable)
+
+        // Start background enrichment if AI is available
+        if (!info.ai_unavailable) {
+          setTimeout(() => tryEnrichWithAI(info.title || movie.title), 2000)
+        } else {
+          // Schedule retry after cooldown
+          const retryAfter = (info.retry_after_seconds || 60) * 1000
+          setTimeout(() => {
+            setAiAvailable(true)
+            tryEnrichWithAI(info.title || movie.title)
+          }, retryAfter)
+        }
+      }
+
       setSearchQuery('')
     } catch (err) {
       setSearchError(err.message || 'Could not load movie details.')
@@ -116,7 +180,16 @@ export default function MovieForm({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
       <div className={`${card} rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-auto`}>
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">{title}</h2>
+          {/* AI Status Indicator */}
+          {!aiAvailable && (
+            <span className="text-xs px-2 py-1 rounded bg-yellow-600/20 text-yellow-400 flex items-center gap-1">
+              <span className="animate-pulse">●</span> AI busy
+            </span>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Search Section */}
           <div className="flex gap-2">
@@ -141,6 +214,28 @@ export default function MovieForm({
           {searchError && <p className="text-red-400 text-sm">{searchError}</p>}
           {searching && <p className="text-purple-400 text-sm">Searching...</p>}
           {loadingDetails && <p className="text-purple-400 text-sm">Loading movie details...</p>}
+
+          {/* AI Pending Status */}
+          {aiPending && !loadingDetails && (
+            <div className={`text-sm px-3 py-2 rounded ${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-100'} ${darkMode ? 'text-yellow-300' : 'text-yellow-700'} flex items-center gap-2`}>
+              {enrichingAI ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Enhancing with AI...
+                </>
+              ) : !aiAvailable ? (
+                <>
+                  <span>⏸️</span>
+                  AI temporarily busy. Genre, mood & streaming will update automatically.
+                </>
+              ) : (
+                <>
+                  <span className="animate-pulse">✨</span>
+                  Fetching AI suggestions...
+                </>
+              )}
+            </div>
+          )}
 
           {/* Search Results */}
           {searchResults.length > 0 && (
@@ -195,14 +290,19 @@ export default function MovieForm({
           />
 
           <div className="flex gap-2">
-            <select
-              value={formData.genre}
-              onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
-              className={`flex-1 px-3 py-2 rounded ${input} border ${border}`}
-            >
-              <option value="">Genre...</option>
-              {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
+            <div className="flex-1 relative">
+              <select
+                value={formData.genre}
+                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                className={`w-full px-3 py-2 rounded ${input} border ${border} ${aiPending && !formData.genre ? 'animate-pulse' : ''}`}
+              >
+                <option value="">Genre...</option>
+                {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+              {aiPending && !formData.genre && (
+                <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs text-yellow-400">⏳</span>
+              )}
+            </div>
             <input
               type="number"
               placeholder="Year"
@@ -212,17 +312,27 @@ export default function MovieForm({
             />
           </div>
 
-          <select
-            value={formData.mood}
-            onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
-            className={`w-full px-3 py-2 rounded ${input} border ${border}`}
-          >
-            <option value="">Mood...</option>
-            {MOODS.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <div className="relative">
+            <select
+              value={formData.mood}
+              onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
+              className={`w-full px-3 py-2 rounded ${input} border ${border} ${aiPending && !formData.mood ? 'animate-pulse' : ''}`}
+            >
+              <option value="">Mood...</option>
+              {MOODS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+            {aiPending && !formData.mood && (
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs text-yellow-400">⏳</span>
+            )}
+          </div>
 
           <div>
-            <p className="text-sm mb-2">Streaming:</p>
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-sm">Streaming:</p>
+              {aiPending && formData.streaming.length === 0 && (
+                <span className="text-xs text-yellow-400">⏳ Checking...</span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1">
               {STREAMING.map(s => (
                 <button
