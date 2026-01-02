@@ -12,6 +12,8 @@ const TOUR_STEPS = [
     title: 'Add Movies',
     description: 'Click here to search and add movies to your watchlist. You can search by title and we\'ll fetch all the details automatically.',
     position: 'bottom',
+    mobileTarget: '[data-tour="add-movie-mobile"]',
+    mobilePosition: 'top',
     icon: '➕'
   },
   {
@@ -26,6 +28,8 @@ const TOUR_STEPS = [
     title: 'Filter & Search',
     description: 'Use filters to find movies by genre, mood, streaming service, or who added them. Great for narrowing down choices!',
     position: 'bottom',
+    mobileTarget: '[data-tour="filters-mobile"]',
+    mobileDescription: 'Tap here to open filters. Find movies by genre, mood, streaming service, or who added them!',
     icon: '🔍'
   },
   {
@@ -34,6 +38,7 @@ const TOUR_STEPS = [
     description: 'Can\'t decide what to watch? Spin the wheel to randomly pick a movie from your list. Let fate decide!',
     position: 'bottom',
     mobileTarget: '[data-tour="spin-wheel-mobile"]',
+    mobilePosition: 'top',
     icon: '🎡'
   },
   {
@@ -42,6 +47,7 @@ const TOUR_STEPS = [
     description: 'Start a voting session to democratically choose a movie. Everyone gets to vote and the winner is revealed!',
     position: 'bottom',
     mobileTarget: '[data-tour="voting-mobile"]',
+    mobilePosition: 'top',
     icon: '🗳️'
   },
   {
@@ -155,8 +161,8 @@ export default function GuidedTour({ onComplete, onSkip, darkMode }) {
 
     let top, left
 
-    // Position based on step preference
-    const position = step.position || 'bottom'
+    // Position based on step preference, use mobilePosition when on mobile
+    const position = (isMobile && step.mobilePosition) ? step.mobilePosition : (step.position || 'bottom')
 
     if (position === 'bottom') {
       top = targetRect.top + targetRect.height + padding
@@ -237,7 +243,7 @@ export default function GuidedTour({ onComplete, onSkip, darkMode }) {
         {/* Content */}
         <h3 className="text-lg font-bold mb-2">{step.title}</h3>
         <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {step.description}
+          {(isMobile && step.mobileDescription) ? step.mobileDescription : step.description}
         </p>
 
         {/* Progress dots */}

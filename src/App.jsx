@@ -656,6 +656,7 @@ export default function App() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`px-3 py-2 rounded text-sm ${showFilters ? 'bg-purple-600 text-white' : card}`}
+          data-tour="filters-mobile"
         >
           🔽
         </button>

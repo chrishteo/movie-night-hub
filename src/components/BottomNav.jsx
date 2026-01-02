@@ -15,6 +15,7 @@ export default function BottomNav({
         <button
           onClick={onAddMovie}
           className="flex flex-col items-center justify-center flex-1 h-full text-purple-500 active:bg-purple-500/20 transition-colors"
+          data-tour="add-movie-mobile"
         >
           <span className="text-xl">+</span>
           <span className="text-xs mt-0.5">Add</span>
