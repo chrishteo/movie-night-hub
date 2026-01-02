@@ -16,9 +16,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const searchQuery = encodeURIComponent(query);
+    // Extract year from query if present (e.g., "Cold War 2018" or "Cold War (2018)")
+    const yearMatch = query.match(/\b(19|20)\d{2}\b/)
+    const year = yearMatch ? yearMatch[0] : null
+    const cleanQuery = query.replace(/\(?\b(19|20)\d{2}\b\)?/, '').trim()
+
+    const searchQuery = encodeURIComponent(cleanQuery);
+    const yearParam = year ? `&year=${year}` : ''
+
     const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${searchQuery}&page=1`
+      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${searchQuery}${yearParam}&page=1`
     );
 
     if (!response.ok) {
@@ -27,8 +34,8 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Return top 5 results with basic info (TMDB sorts by popularity)
-    const results = (data.results || []).slice(0, 5).map(movie => ({
+    // Return top 10 results with basic info
+    const results = (data.results || []).slice(0, 10).map(movie => ({
       tmdb_id: movie.id,
       title: movie.title,
       year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : null,

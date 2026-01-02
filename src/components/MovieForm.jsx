@@ -195,7 +195,7 @@ export default function MovieForm({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Search for a movie..."
+              placeholder="Search movie (add year: Cold War 2018)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickSearch())}
