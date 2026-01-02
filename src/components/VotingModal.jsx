@@ -8,6 +8,7 @@ export default function VotingModal({
   users,
   currentUser,
   onVote,
+  onRemoveVote,
   onDeclareWinner,
   onClose,
   darkMode
@@ -124,22 +125,36 @@ export default function VotingModal({
                     <p className="font-bold text-sm truncate">{movie.title}</p>
                     <div className="flex gap-2 mt-1">
                       <button
-                        onClick={() => onVote(movie.id, currentUser, 'yes')}
-                        className={`px-2 py-0.5 rounded text-xs ${
+                        onClick={() => {
+                          if (myVote === 'yes') {
+                            onRemoveVote(movie.id, currentUser)
+                          } else {
+                            onVote(movie.id, currentUser, 'yes')
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded text-xs transition-all ${
                           myVote === 'yes'
-                            ? 'bg-green-600'
+                            ? 'bg-green-600 ring-2 ring-green-400'
                             : 'bg-gray-600 hover:bg-gray-500'
                         }`}
+                        title={myVote === 'yes' ? 'Click to remove vote' : 'Vote yes'}
                       >
                         👍
                       </button>
                       <button
-                        onClick={() => onVote(movie.id, currentUser, 'no')}
-                        className={`px-2 py-0.5 rounded text-xs ${
+                        onClick={() => {
+                          if (myVote === 'no') {
+                            onRemoveVote(movie.id, currentUser)
+                          } else {
+                            onVote(movie.id, currentUser, 'no')
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded text-xs transition-all ${
                           myVote === 'no'
-                            ? 'bg-red-600'
+                            ? 'bg-red-600 ring-2 ring-red-400'
                             : 'bg-gray-600 hover:bg-gray-500'
                         }`}
+                        title={myVote === 'no' ? 'Click to remove vote' : 'Vote no'}
                       >
                         👎
                       </button>

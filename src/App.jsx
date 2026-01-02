@@ -79,7 +79,8 @@ export default function App() {
 
   const {
     votes,
-    castVote
+    castVote,
+    removeVote
   } = useVotes(authUserId)
 
   const {
@@ -839,6 +840,7 @@ export default function App() {
           users={users}
           currentUser={currentUser}
           onVote={castVote}
+          onRemoveVote={removeVote}
           onDeclareWinner={handleWinnerDeclared}
           onClose={() => setShowVoting(false)}
           darkMode={darkMode}

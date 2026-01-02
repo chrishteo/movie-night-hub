@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   getVotes,
   castVote as castVoteDb,
+  removeVote as removeVoteDb,
   clearVotes as clearVotesDb,
   subscribeToVotes
 } from '../lib/database'
@@ -68,6 +69,22 @@ export function useVotes(authUserId = null) {
     }
   }, [authUserId])
 
+  const removeVote = useCallback(async (movieId, userName) => {
+    try {
+      await removeVoteDb(movieId, userName, authUserId)
+      // Update local state
+      setVotes(prev => prev.filter(v => {
+        if (authUserId && v.user_id) {
+          return !(v.movie_id === movieId && v.user_id === authUserId)
+        }
+        return !(v.movie_id === movieId && v.user_name === userName)
+      }))
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [authUserId])
+
   const clearAllVotes = useCallback(async () => {
     try {
       await clearVotesDb()
@@ -83,6 +100,7 @@ export function useVotes(authUserId = null) {
     loading,
     error,
     castVote,
+    removeVote,
     clearAllVotes,
     refetch: fetchVotes
   }

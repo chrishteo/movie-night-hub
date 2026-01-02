@@ -227,6 +227,19 @@ export async function clearVotes() {
   if (error) throw error
 }
 
+export async function removeVote(movieId, userName, userId = null) {
+  let query = supabase.from('votes').delete()
+
+  if (userId) {
+    query = query.eq('movie_id', movieId).eq('user_id', userId)
+  } else {
+    query = query.eq('movie_id', movieId).eq('user_name', userName)
+  }
+
+  const { error } = await query
+  if (error) throw error
+}
+
 // ============ MOVIE OF THE WEEK ============
 
 export async function getMovieOfTheWeekHistory() {
