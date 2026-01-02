@@ -169,12 +169,12 @@ export default function AdminPanel({
         </div>
 
         {/* Tabs */}
-        <div className={`flex border-b ${border} overflow-x-auto`}>
+        <div className={`flex border-b ${border} overflow-x-auto shrink-0`}>
           {TABS.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-3 text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
                 activeTab === tab
                   ? 'border-b-2 border-purple-500 text-purple-400'
                   : 'text-gray-400 hover:text-gray-200'
@@ -426,12 +426,12 @@ export default function AdminPanel({
             <div className="space-y-4">
               {!selectedBugReport ? (
                 <>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
                     {['all', 'open', 'in_progress', 'resolved', 'closed'].map(status => (
                       <button
                         key={status}
                         onClick={() => setStatusFilter(status)}
-                        className={`px-3 py-1 text-sm rounded ${
+                        className={`px-3 py-1 text-sm rounded whitespace-nowrap shrink-0 ${
                           statusFilter === status
                             ? 'bg-purple-600'
                             : darkMode ? 'bg-gray-700' : 'bg-gray-200'
