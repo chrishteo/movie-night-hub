@@ -54,26 +54,42 @@ async function getOMDBRatings(title, year) {
 }
 
 // Fetch full movie data from TMDB (poster, rating, trailer, cast, director)
-async function getTMDBData(title, year) {
-  if (!TMDB_API_KEY) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null }
+async function getTMDBData(title, year, tmdbId = null) {
+  if (!TMDB_API_KEY) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null, tmdb_title: null }
 
   try {
-    // Search for the movie
-    const query = encodeURIComponent(title)
-    const yearParam = year ? `&year=${year}` : ''
-    const searchResponse = await fetch(
-      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${query}${yearParam}`
-    )
+    let movieId = tmdbId
+    let movie = null
 
-    if (!searchResponse.ok) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null }
-
-    const searchData = await searchResponse.json()
-    if (!searchData.results || searchData.results.length === 0) {
-      return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null }
+    // If we have a TMDB ID, fetch that specific movie
+    if (tmdbId) {
+      const movieResponse = await fetch(
+        `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}`
+      )
+      if (movieResponse.ok) {
+        movie = await movieResponse.json()
+        movieId = movie.id
+      }
     }
 
-    const movie = searchData.results[0]
-    const movieId = movie.id
+    // Otherwise, search for the movie
+    if (!movie) {
+      const query = encodeURIComponent(title)
+      const yearParam = year ? `&year=${year}` : ''
+      const searchResponse = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${query}${yearParam}`
+      )
+
+      if (!searchResponse.ok) return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null, tmdb_title: null }
+
+      const searchData = await searchResponse.json()
+      if (!searchData.results || searchData.results.length === 0) {
+        return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null, tmdb_title: null }
+      }
+
+      movie = searchData.results[0]
+      movieId = movie.id
+    }
     const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : ''
     const tmdb_rating = movie.vote_average || null
     const tmdb_year = movie.release_date ? parseInt(movie.release_date.split('-')[0]) : null
@@ -108,10 +124,10 @@ async function getTMDBData(title, year) {
       director = directorInfo?.name || ''
     }
 
-    return { poster, tmdb_rating, trailer_url, cast, director, tmdb_year }
+    return { poster, tmdb_rating, trailer_url, cast, director, tmdb_year, tmdb_title: movie.title }
   } catch (err) {
     console.error('TMDB error:', err)
-    return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null }
+    return { poster: '', tmdb_rating: null, trailer_url: '', cast: [], director: '', tmdb_year: null, tmdb_title: null }
   }
 }
 
@@ -227,7 +243,7 @@ export default async function handler(req, res) {
     console.log('Authenticated request from:', user.email)
   }
 
-  const { title, aiOnly = false, tmdbData = null } = req.body
+  const { title, aiOnly = false, tmdbData = null, tmdbId = null } = req.body
 
   if (!title || typeof title !== 'string') {
     return res.status(400).json({ error: 'Movie title is required' })
@@ -270,8 +286,9 @@ export default async function handler(req, res) {
   const searchYear = yearMatch ? parseInt(yearMatch[0]) : null
   const cleanTitle = title.replace(/\b(19|20)\d{2}\b/, '').trim()
 
+  // If tmdbId provided, use it directly; otherwise search
   const [tmdbResult, omdbResult] = await Promise.all([
-    getTMDBData(cleanTitle, searchYear),
+    getTMDBData(cleanTitle, searchYear, tmdbId),
     getOMDBRatings(cleanTitle, searchYear)
   ])
 

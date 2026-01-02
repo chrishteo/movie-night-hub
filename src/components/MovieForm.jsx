@@ -108,9 +108,9 @@ export default function MovieForm({
     setAiPending(false)
 
     try {
-      // Search with exact title and year for better accuracy
+      // Use TMDB ID for exact match, fallback to title search
       const searchTitle = movie.year ? `${movie.title} ${movie.year}` : movie.title
-      const info = await searchMovie(searchTitle)
+      const info = await searchMovie(searchTitle, movie.tmdb_id)
 
       setFormData(prev => ({
         ...prev,

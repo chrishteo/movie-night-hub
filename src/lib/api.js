@@ -18,13 +18,13 @@ export async function searchTMDB(query) {
   return response.json()
 }
 
-export async function searchMovie(title) {
+export async function searchMovie(title, tmdbId = null) {
   const response = await fetch('/api/search-movie', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ title })
+    body: JSON.stringify({ title, tmdbId })
   })
 
   if (!response.ok) {
