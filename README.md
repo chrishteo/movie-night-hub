@@ -320,6 +320,7 @@ Submit a bug report in the app - you should receive an email!
 - Include year in search for better results (e.g., "Cold War 2018")
 - Shows 10 results instead of 5
 - Year filter passed to TMDB for more accurate matches
+- Clicking a search result now fetches exact movie by TMDB ID (fixes wrong movie being loaded)
 
 ### Mobile & UI Fixes
 - Guided tour now targets correct buttons on mobile (BottomNav)
