@@ -49,7 +49,12 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    // Ignore "session missing" errors - user is already logged out
+    if (error && !error.message?.includes('session')) {
+      throw error
+    }
+    // Clear user state regardless
+    setUser(null)
   }, [])
 
   const value = {

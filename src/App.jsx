@@ -904,6 +904,7 @@ export default function App() {
       {showCollections && (
         <Collections
           movies={movies}
+          users={users}
           onClose={() => setShowCollections(false)}
           darkMode={darkMode}
           authUserId={authUserId}

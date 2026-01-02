@@ -379,6 +379,85 @@ export async function removeMovieFromCollection(collectionId, movieId) {
   if (error) throw error
 }
 
+// ============ COLLECTION SHARING ============
+
+export async function getCollectionShares(collectionId) {
+  const { data, error } = await supabase
+    .from('collection_shares')
+    .select(`
+      id,
+      can_edit,
+      created_at,
+      shared_with_user_id,
+      users:shared_with_user_id (id, name, avatar)
+    `)
+    .eq('collection_id', collectionId)
+
+  if (error) throw error
+  return data
+}
+
+export async function shareCollection(collectionId, userId, canEdit = false, ownerAuthId) {
+  const { data, error } = await supabase
+    .from('collection_shares')
+    .insert([{
+      collection_id: collectionId,
+      shared_with_user_id: userId,
+      can_edit: canEdit,
+      owner_id: ownerAuthId
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateCollectionShare(shareId, canEdit) {
+  const { data, error } = await supabase
+    .from('collection_shares')
+    .update({ can_edit: canEdit })
+    .eq('id', shareId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeCollectionShare(shareId) {
+  const { error } = await supabase
+    .from('collection_shares')
+    .delete()
+    .eq('id', shareId)
+
+  if (error) throw error
+}
+
+// Check if user can edit a collection (owner or has edit permission)
+export async function canEditCollection(collectionId, authUserId) {
+  // First check if user is owner
+  const { data: collection, error: collError } = await supabase
+    .from('collections')
+    .select('user_id')
+    .eq('id', collectionId)
+    .single()
+
+  if (collError) return false
+  if (collection.user_id === authUserId) return true
+
+  // Check if user has edit permission via share
+  const { data: share, error: shareError } = await supabase
+    .from('collection_shares')
+    .select('can_edit')
+    .eq('collection_id', collectionId)
+    .eq('shared_with_user_id', authUserId)
+    .single()
+
+  if (shareError) return false
+  return share?.can_edit === true
+}
+
 // ============ MOVIE NIGHTS ============
 
 export async function getMovieNights() {
