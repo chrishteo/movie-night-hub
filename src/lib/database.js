@@ -121,22 +121,27 @@ export async function addMovie(movie, userId = null) {
 }
 
 export async function updateMovie(id, updates) {
+  // Build update object with only the fields that are provided
+  // This prevents setting title to undefined or resetting watched/favorite
+  const updateData = {}
+
+  // Only include fields that are explicitly in the updates object
+  if (updates.title !== undefined) updateData.title = updates.title
+  if (updates.director !== undefined) updateData.director = updates.director || null
+  if (updates.year !== undefined) updateData.year = updates.year || null
+  if (updates.genre !== undefined) updateData.genre = updates.genre || null
+  if (updates.mood !== undefined) updateData.mood = updates.mood || null
+  if (updates.rating !== undefined) updateData.rating = updates.rating
+  if (updates.poster !== undefined) updateData.poster = updates.poster || null
+  if (updates.streaming !== undefined) updateData.streaming = updates.streaming || []
+  if (updates.watched !== undefined) updateData.watched = updates.watched
+  if (updates.watched_at !== undefined) updateData.watched_at = updates.watched_at
+  if (updates.favorite !== undefined) updateData.favorite = updates.favorite
+  if (updates.notes !== undefined) updateData.notes = updates.notes || null
+
   const { data, error } = await supabase
     .from('movies')
-    .update({
-      title: updates.title,
-      director: updates.director || null,
-      year: updates.year || null,
-      genre: updates.genre || null,
-      mood: updates.mood || null,
-      rating: updates.rating || 0,
-      poster: updates.poster || null,
-      streaming: updates.streaming || [],
-      watched: updates.watched || false,
-      watched_at: updates.watched_at || null,
-      favorite: updates.favorite || false,
-      notes: updates.notes || null
-    })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single()
