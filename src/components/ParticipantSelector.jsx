@@ -14,6 +14,11 @@ export default function ParticipantSelector({
   const card = darkMode ? 'bg-gray-700' : 'bg-gray-100'
   const border = darkMode ? 'border-gray-600' : 'border-gray-300'
 
+  // Filter out system/admin users that shouldn't participate
+  const participantUsers = users.filter(u =>
+    u.name.toLowerCase() !== 'admin'
+  )
+
   // Count movies per user
   const getMovieCount = (userName) => {
     return movies.filter(m => m.added_by === userName).length
@@ -51,7 +56,7 @@ export default function ParticipantSelector({
 
       <div className={`${card} rounded-lg p-3 border ${border}`}>
         <div className="space-y-2">
-          {users.map(user => {
+          {participantUsers.map(user => {
             const isSelected = selectedUsers.includes(user.name)
             const movieCount = getMovieCount(user.name)
             const unwatchedCount = getUnwatchedCount(user.name)

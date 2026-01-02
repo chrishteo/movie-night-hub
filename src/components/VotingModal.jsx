@@ -12,7 +12,9 @@ export default function VotingModal({
   onClose,
   darkMode
 }) {
-  const [selectedUsers, setSelectedUsers] = useState(() => users.map(u => u.name))
+  const [selectedUsers, setSelectedUsers] = useState(() =>
+    users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
+  )
 
   // Filter movies by selected participants
   const participantMovies = selectedUsers.length > 0
@@ -29,7 +31,9 @@ export default function VotingModal({
     )
   }
 
-  const selectAllUsers = () => setSelectedUsers(users.map(u => u.name))
+  const selectAllUsers = () => setSelectedUsers(
+    users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
+  )
   const selectNoUsers = () => setSelectedUsers([])
 
   const handleDeclareWinner = () => {
