@@ -31,7 +31,7 @@ export default function AvatarPicker({ value, onChange, darkMode }) {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className={`absolute top-14 left-0 z-20 p-2 rounded-lg shadow-xl grid grid-cols-6 gap-1 ${
+          <div className={`absolute top-14 left-1/2 -translate-x-1/2 z-20 p-2 rounded-lg shadow-xl grid grid-cols-6 gap-1 w-[236px] ${
             darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
           }`}>
             {AVATARS.map(avatar => (
@@ -42,7 +42,7 @@ export default function AvatarPicker({ value, onChange, darkMode }) {
                   onChange(avatar)
                   setIsOpen(false)
                 }}
-                className={`w-9 h-9 text-xl rounded hover:bg-purple-500/20 transition-colors ${
+                className={`w-9 h-9 text-xl rounded flex items-center justify-center hover:bg-purple-500/20 transition-colors ${
                   value === avatar ? 'bg-purple-500/30 ring-2 ring-purple-500' : ''
                 }`}
               >
