@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getVoteTally, getUserVote, findWinner } from '../utils/helpers'
 import ParticipantSelector from './ParticipantSelector'
 
@@ -15,6 +15,17 @@ export default function VotingModal({
   const [selectedUsers, setSelectedUsers] = useState(() =>
     users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
   )
+
+  // Handle Escape key to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   // Filter movies by selected participants
   const participantMovies = selectedUsers.length > 0
@@ -48,11 +59,26 @@ export default function VotingModal({
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <div className={`${card} rounded-lg p-4 w-full max-w-lg max-h-[90vh] overflow-auto`}>
-        <h2 className="text-lg font-bold mb-2">
-          🗳️ Vote as {currentUser}
-        </h2>
+        {/* Header with close button */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold">
+            🗳️ Vote as {currentUser}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-500/30 rounded-full transition-colors"
+            title="Close (Esc)"
+          >
+            <span className="text-xl leading-none">&times;</span>
+          </button>
+        </div>
 
         {/* Participant Selector */}
         {users.length > 0 && (
@@ -130,19 +156,13 @@ export default function VotingModal({
           </div>
         )}
 
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 rounded bg-gray-600 hover:bg-gray-500"
-          >
-            Close
-          </button>
+        <div className="mt-4">
           <button
             onClick={handleDeclareWinner}
             disabled={unwatched.length === 0}
-            className="flex-1 px-4 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white disabled:opacity-50"
+            className="w-full px-4 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white disabled:opacity-50"
           >
-            🏆 Winner
+            🏆 Declare Winner
           </button>
         </div>
       </div>
