@@ -156,15 +156,23 @@ movie-night-hub/
 ### Adding Movies
 
 1. Click the "+ Add" button
-2. Enter a movie title
-3. Click the 🔍 button to auto-fill details using AI
-4. Adjust any fields as needed
-5. Click "Add"
+2. Enter a movie title (include year for better results: "Cold War 2018")
+3. Click the 🔍 button to search - shows up to 10 results
+4. Select the correct movie from results
+5. Details auto-fill (poster, cast, ratings, streaming)
+6. Adjust any fields as needed
+7. Click "Add"
 
 ### Decision Tools
 
 - **🎡 Spin**: Randomly pick from unwatched movies
+  - Smooth easing animation (fast start, slow finish)
+  - Select which participants' movies to include
+  - "Prioritize shared movies" option - picks from movies added by multiple people first
+  - Shows who added the winning movie
 - **🗳️ Vote**: Each user votes thumbs up/down, declare a winner
+  - Toggle votes by clicking again to remove
+  - Multiple exit options (Esc key, X button, click outside)
 - **📅 Movie of the Week**: Pick and track weekly selections
 
 ### AI Recommendations
@@ -295,6 +303,28 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Spin Wheel Improvements
+- Smooth easing animation (fast start, dramatic slowdown)
+- Bigger display window for better visibility
+- Shows "Added by" info for winning movie
+- New "Prioritize shared movies" option - when enabled, picks from movies that multiple participants added
+- Admin user excluded from participant selection
+
+### Voting Enhancements
+- Toggle votes by clicking the same button again
+- Multiple exit options: Esc key, X button in header, click outside modal
+- Visual ring highlight on active votes
+
+### Movie Search Improvements
+- Include year in search for better results (e.g., "Cold War 2018")
+- Shows 10 results instead of 5
+- Year filter passed to TMDB for more accurate matches
+
+### Mobile & UI Fixes
+- Guided tour now targets correct buttons on mobile (BottomNav)
+- Admin panel tabs scroll horizontally instead of squeezing
+- Avatar picker grid displays correctly
 
 ### Admin Panel & Bug Reporting
 - Full admin dashboard with 4 tabs (Users, Movies, Announcements, Bug Reports)
