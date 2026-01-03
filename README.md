@@ -15,6 +15,11 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
   - Auto-fill movie details by searching
   - Smart recommendations based on your collection
 - **Filtering & Sorting**: By genre, mood, streaming service, watched status, favorites, and who added
+- **Collections**: Organize movies into custom collections
+  - Create collections with custom emoji and color
+  - View mode with nice movie cards (poster, rating, genre, watched status)
+  - Edit mode with search to quickly add/remove movies
+  - Granular sharing: share with specific users, set view-only or edit permissions
 - **Dark/Light Mode**: Toggle between themes
 - **Real-time Updates**: See changes from other users instantly
 - **Share List**: Generate a shareable link to your collection
@@ -133,9 +138,15 @@ For real-time updates to work across users:
 movie-night-hub/
 ├── api/                        # Vercel serverless functions
 │   ├── search-movie.js         # AI movie search endpoint
-│   └── recommendations.js      # AI recommendations endpoint
+│   ├── recommendations.js      # AI recommendations endpoint
+│   └── similar.js              # Similar movies endpoint
 ├── supabase/
-│   └── schema.sql              # Database schema
+│   ├── schema.sql              # Database schema
+│   ├── supabase-admin-migration.sql  # Admin features
+│   ├── functions/              # Edge functions
+│   └── migrations/             # Feature migrations
+│       ├── collection_sharing.sql
+│       └── collection_sharing_fix.sql
 ├── src/
 │   ├── components/             # React components
 │   ├── hooks/                  # Custom React hooks
@@ -210,7 +221,7 @@ The app uses Tailwind CSS. Modify colors in `tailwind.config.js` or update the c
 
 ### 1. Run Admin Migration
 
-In Supabase SQL Editor, run `supabase-admin-migration.sql` to create:
+In Supabase SQL Editor, run `supabase/supabase-admin-migration.sql` to create:
 - `is_admin` column on users table
 - `announcements` table
 - `bug_reports` table
@@ -227,6 +238,35 @@ UPDATE users SET is_admin = TRUE WHERE name = 'YourAdminName';
 ### 3. Access Admin Panel
 
 Log in as admin → Click "Admin" button in header
+
+---
+
+## Collections Setup
+
+To enable collection sharing features, run the migrations in order:
+
+### 1. Run Collection Sharing Migration
+
+In Supabase SQL Editor, run `supabase/migrations/collection_sharing.sql` to create:
+- `collection_shares` table
+- RLS policies for shared access
+
+### 2. Run Collection Sharing Fix
+
+In Supabase SQL Editor, run `supabase/migrations/collection_sharing_fix.sql` to:
+- Fix RLS policy recursion issues
+- Add helper function for user lookups
+
+### 3. Link Existing Collections (if needed)
+
+If you have existing collections without owners:
+```sql
+-- Find your auth ID
+SELECT id FROM auth.users WHERE email = 'your@email.com';
+
+-- Update collections
+UPDATE collections SET user_id = 'YOUR_AUTH_ID' WHERE user_id IS NULL;
+```
 
 ---
 
@@ -303,6 +343,21 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Collections Feature
+- Create custom collections with emoji and color themes
+- Two viewing modes:
+  - **View Mode**: Beautiful movie card grid with posters, ratings, genres, and watched status
+  - **Edit Mode**: Add/remove movies with search functionality
+- Granular sharing system:
+  - Share collections with specific users (not everyone)
+  - Set permissions per user: "View only" or "Can edit"
+  - Collection owners can manage all shares
+- Search movies by title, director, genre, or year when adding to collections
+
+### Auth Improvements
+- Graceful handling of expired sessions on sign out
+- No more errors when session already expired
 
 ### Spin Wheel Improvements
 - Smooth easing animation (fast start, dramatic slowdown)
