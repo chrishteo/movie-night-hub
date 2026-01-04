@@ -5,31 +5,47 @@ export default function BottomNav({
   onShowRecs,
   onShowStats,
   onShowTrending,
+  onShowScheduler,
+  onShowMOTW,
+  onShowHistory,
+  onShowShare,
+  onShowCollections,
+  onToggleBulkSelect,
+  bulkSelectMode,
   darkMode
 }) {
   const bg = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
 
   return (
     <nav className={`md:hidden fixed bottom-0 left-0 right-0 ${bg} border-t z-30 safe-area-bottom`}>
-      <div className="flex justify-around items-center h-16">
+      <div className="flex items-center h-16 overflow-x-auto scrollbar-hide">
         <button
           onClick={onAddMovie}
-          className="flex flex-col items-center justify-center flex-1 h-full text-purple-500 active:bg-purple-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-purple-500 active:bg-purple-500/20 transition-colors"
           data-tour="add-movie-mobile"
         >
           <span className="text-xl">+</span>
           <span className="text-xs mt-0.5">Add</span>
         </button>
         <button
+          onClick={onToggleBulkSelect}
+          className={`flex flex-col items-center justify-center min-w-[4.5rem] h-full transition-colors ${
+            bulkSelectMode ? 'text-purple-500 bg-purple-500/20' : 'text-gray-500 active:bg-gray-500/20'
+          }`}
+        >
+          <span className="text-xl">☑️</span>
+          <span className="text-xs mt-0.5">Select</span>
+        </button>
+        <button
           onClick={onShowTrending}
-          className="flex flex-col items-center justify-center flex-1 h-full text-red-500 active:bg-red-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-red-500 active:bg-red-500/20 transition-colors"
         >
           <span className="text-xl">🔥</span>
           <span className="text-xs mt-0.5">Hot</span>
         </button>
         <button
           onClick={onSpinWheel}
-          className="flex flex-col items-center justify-center flex-1 h-full text-green-500 active:bg-green-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-green-500 active:bg-green-500/20 transition-colors"
           data-tour="spin-wheel-mobile"
         >
           <span className="text-xl">🎡</span>
@@ -37,15 +53,57 @@ export default function BottomNav({
         </button>
         <button
           onClick={onVote}
-          className="flex flex-col items-center justify-center flex-1 h-full text-blue-500 active:bg-blue-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-blue-500 active:bg-blue-500/20 transition-colors"
           data-tour="voting-mobile"
         >
           <span className="text-xl">🗳️</span>
           <span className="text-xs mt-0.5">Vote</span>
         </button>
         <button
+          onClick={onShowMOTW}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-yellow-500 active:bg-yellow-500/20 transition-colors"
+        >
+          <span className="text-xl">🎬</span>
+          <span className="text-xs mt-0.5">MOTW</span>
+        </button>
+        <button
+          onClick={onShowScheduler}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-amber-500 active:bg-amber-500/20 transition-colors"
+        >
+          <span className="text-xl">📅</span>
+          <span className="text-xs mt-0.5">Schedule</span>
+        </button>
+        <button
+          onClick={onShowHistory}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-pink-500 active:bg-pink-500/20 transition-colors"
+        >
+          <span className="text-xl">📜</span>
+          <span className="text-xs mt-0.5">History</span>
+        </button>
+        <button
+          onClick={onShowRecs}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-orange-500 active:bg-orange-500/20 transition-colors"
+        >
+          <span className="text-xl">💡</span>
+          <span className="text-xs mt-0.5">AI Recs</span>
+        </button>
+        <button
+          onClick={onShowCollections}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-cyan-500 active:bg-cyan-500/20 transition-colors"
+        >
+          <span className="text-xl">📚</span>
+          <span className="text-xs mt-0.5">Collections</span>
+        </button>
+        <button
+          onClick={onShowShare}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-teal-500 active:bg-teal-500/20 transition-colors"
+        >
+          <span className="text-xl">🔗</span>
+          <span className="text-xs mt-0.5">Share</span>
+        </button>
+        <button
           onClick={onShowStats}
-          className="flex flex-col items-center justify-center flex-1 h-full text-indigo-500 active:bg-indigo-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-indigo-500 active:bg-indigo-500/20 transition-colors"
         >
           <span className="text-xl">📊</span>
           <span className="text-xs mt-0.5">Stats</span>

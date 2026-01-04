@@ -30,9 +30,12 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
   - **Users Tab**: View all users, toggle admin status, delete users
   - **Movies Tab**: Search and delete any movie
   - **Announcements Tab**: Create/edit/delete announcements with types (info, warning, update, maintenance)
+  - **Changelog Tab**: Manage What's New entries (features, fixes, improvements)
   - **Bug Reports Tab**: View and manage user-submitted bug reports with status tracking
 - **Announcement Banner**: Dismissible banners at top of app (per-session)
 - **Bug Reporting**: Users can submit bugs and view their own reports
+- **What's New**: Changelog system that auto-shows on login when there are new updates
+  - Auto-creates changelog entry when bugs are marked as resolved
 
 ### Onboarding
 - **Guided Tour**: 7-step interactive tutorial for new users
@@ -53,8 +56,9 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 
 - **Frontend**: React 18 + Vite + Tailwind CSS
 - **Database**: Supabase (PostgreSQL)
-- **Deployment**: Vercel
+- **Deployment**: Vercel (with Analytics)
 - **AI**: Anthropic Claude API with web search
+- **Email**: Resend (via Supabase Edge Functions)
 
 ## Prerequisites
 
@@ -143,6 +147,7 @@ movie-night-hub/
 ├── supabase/
 │   ├── schema.sql              # Database schema
 │   ├── supabase-admin-migration.sql  # Admin features
+│   ├── supabase-changelog-migration.sql  # Changelog feature
 │   ├── functions/              # Edge functions
 │   └── migrations/             # Feature migrations
 │       ├── collection_sharing.sql
@@ -238,6 +243,12 @@ UPDATE users SET is_admin = TRUE WHERE name = 'YourAdminName';
 ### 3. Access Admin Panel
 
 Log in as admin → Click "Admin" button in header
+
+### 4. Run Changelog Migration
+
+In Supabase SQL Editor, run `supabase/supabase-changelog-migration.sql` to create:
+- `changelog` table for What's New entries
+- RLS policies for changelog access
 
 ---
 
@@ -382,10 +393,22 @@ Submit a bug report in the app - you should receive an email!
 - Admin panel tabs scroll horizontally instead of squeezing
 - Avatar picker grid displays correctly
 
+### What's New / Changelog
+- Admin can create changelog entries (features, fixes, improvements)
+- Auto-creates changelog entry when bugs are marked as resolved
+- Auto-popup on login when there are new entries since last visit
+- "What's New" button in user profile menu
+- Shows latest 20 entries with type badges
+
 ### Admin Panel & Bug Reporting
-- Full admin dashboard with 4 tabs (Users, Movies, Announcements, Bug Reports)
+- Full admin dashboard with 5 tabs (Users, Movies, Announcements, Changelog, Bug Reports)
 - Users can submit and track their own bug reports
 - Announcement system with dismissible banners
+
+### Mobile Improvements
+- Modal safe area padding for phones with navigation gestures
+- Tutorial tooltip no longer overlaps bottom nav buttons
+- Improved touch targets and scrolling
 
 ### Guided Tour
 - Interactive 7-step tutorial for new users
@@ -395,6 +418,14 @@ Submit a bug report in the app - you should receive an email!
 ### Email Notifications
 - Admin receives emails for new users, profile changes, bug reports
 - Powered by Resend + Supabase Edge Functions
+
+### Analytics
+- Vercel Analytics integration for visitor tracking
+- Privacy-friendly, no cookie consent required
+
+### Bug Fixes
+- SpinWheel and VotingModal now fetch all movies independently (not limited by pagination)
+- "Mine" tab pagination works correctly with server-side filtering
 
 ---
 

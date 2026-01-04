@@ -986,6 +986,13 @@ export default function App() {
         onShowRecs={() => setShowRecs(true)}
         onShowStats={() => setShowStats(true)}
         onShowTrending={() => setShowTrending(true)}
+        onShowScheduler={() => setShowScheduler(true)}
+        onShowMOTW={() => setShowMOTW(true)}
+        onShowHistory={() => setShowHistory(true)}
+        onShowShare={() => setShowShare(true)}
+        onShowCollections={() => setShowCollections(true)}
+        onToggleBulkSelect={() => setBulkSelectMode(!bulkSelectMode)}
+        bulkSelectMode={bulkSelectMode}
         darkMode={darkMode}
       />
 

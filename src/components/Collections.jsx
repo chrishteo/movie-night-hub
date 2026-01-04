@@ -240,20 +240,34 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
   })
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 modal-backdrop modal-safe-area">
-      <div className={`${card} rounded-lg w-full max-w-4xl max-h-[85vh] flex flex-col modal-content`}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 md:p-4 z-40 modal-backdrop modal-safe-area">
+      <div className={`${card} rounded-lg w-full max-w-4xl max-h-[90vh] md:max-h-[85vh] flex flex-col modal-content`}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📚</span>
-            <h2 className="text-xl font-bold">Collections</h2>
+        <div className="p-3 md:p-4 border-b border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Mobile back button when viewing collection */}
+            {selectedCollection && (
+              <button
+                onClick={() => { setSelectedCollection(null); setEditMode(false); }}
+                className="md:hidden text-gray-400 hover:text-white p-1"
+              >
+                ←
+              </button>
+            )}
+            <span className="text-xl md:text-2xl">📚</span>
+            <h2 className="text-lg md:text-xl font-bold">
+              {selectedCollection ? (
+                <span className="md:hidden">{selectedCollection.emoji} {selectedCollection.name}</span>
+              ) : null}
+              <span className={selectedCollection ? 'hidden md:inline' : ''}>Collections</span>
+            </h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl p-1">✕</button>
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar - Collection list */}
-          <div className={`w-64 border-r ${border} p-4 overflow-y-auto`}>
+          {/* Sidebar - Collection list (hidden on mobile when collection selected) */}
+          <div className={`${selectedCollection ? 'hidden md:block' : 'block'} w-full md:w-64 md:border-r ${border} p-3 md:p-4 overflow-y-auto`}>
             <button
               onClick={() => setShowCreate(!showCreate)}
               className="w-full px-3 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white mb-4"
@@ -381,13 +395,13 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
             )}
           </div>
 
-          {/* Main content */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          {/* Main content (hidden on mobile when no collection selected) */}
+          <div className={`${selectedCollection ? 'block' : 'hidden md:flex'} flex-1 p-3 md:p-4 overflow-y-auto`}>
             {selectedCollection ? (
               <>
-                {/* Header with title and actions */}
+                {/* Header with title and actions - simplified on mobile since title is in header */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
+                  <div className="hidden md:flex items-center gap-2">
                     <span className="text-2xl">{selectedCollection.emoji}</span>
                     <h3 className="text-lg font-bold">{selectedCollection.name}</h3>
                     <span className="text-sm opacity-50">({collectionMovies.length} movies)</span>
@@ -397,16 +411,35 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => setEditMode(!editMode)}
-                    className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                      editMode
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                    }`}
-                  >
-                    {editMode ? '✓ Done' : '✏️ Edit'}
-                  </button>
+                  {/* Mobile: show movie count and shared info */}
+                  <div className="md:hidden flex items-center gap-2 flex-wrap">
+                    <span className="text-sm opacity-50">({collectionMovies.length} movies)</span>
+                    {!isOwner(selectedCollection) && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-blue-600/30 text-blue-300">
+                        Shared by {getOwnerInfo(selectedCollection)?.name || 'Unknown'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isOwner(selectedCollection) && (
+                      <button
+                        onClick={() => handleOpenShareModal(selectedCollection)}
+                        className="md:hidden px-3 py-1.5 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        🔗
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setEditMode(!editMode)}
+                      className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                        editMode
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {editMode ? '✓ Done' : '✏️ Edit'}
+                    </button>
+                  </div>
                 </div>
 
                 {editMode ? (
@@ -414,16 +447,16 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                   <>
                     {/* Current movies in collection (removable) */}
                     {collectionMovies.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium mb-2 opacity-70">In Collection (click to remove):</h4>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="mb-4 md:mb-6">
+                        <h4 className="text-sm font-medium mb-2 opacity-70">In Collection (tap to remove):</h4>
+                        <div className="flex flex-wrap gap-1.5 md:gap-2">
                           {collectionMovies.map(m => (
                             <button
                               key={m.id}
                               onClick={() => handleToggleMovie(m.id)}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded ${COLLECTION_COLORS[selectedCollection.color]} text-white text-sm hover:opacity-80 transition-opacity`}
+                              className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded ${COLLECTION_COLORS[selectedCollection.color]} text-white text-xs md:text-sm hover:opacity-80 transition-opacity`}
                             >
-                              <span className="truncate max-w-[150px]">{m.title}</span>
+                              <span className="truncate max-w-[100px] md:max-w-[150px]">{m.title}</span>
                               <span className="opacity-70">✕</span>
                             </button>
                           ))}
@@ -432,7 +465,7 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                     )}
 
                     {/* Search and add movies */}
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-3">
                       <h4 className="text-sm font-medium opacity-70">Add Movies:</h4>
                       <div className="flex-1 relative">
                         <input
@@ -440,12 +473,12 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                           placeholder="Search by title, director, genre, year..."
                           value={movieSearch}
                           onChange={(e) => setMovieSearch(e.target.value)}
-                          className={`w-full px-3 py-1.5 rounded ${input} text-sm focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                          className={`w-full px-3 py-2 md:py-1.5 rounded ${input} text-sm focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         />
                         {movieSearch && (
                           <button
                             onClick={() => setMovieSearch('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
                           >
                             ✕
                           </button>
@@ -479,7 +512,7 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                       }
 
                       return (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {availableMovies.map(m => (
                             <button
                               key={m.id}
@@ -488,14 +521,15 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                             >
                               <div className="flex gap-2">
                                 {m.poster ? (
-                                  <img src={m.poster} alt="" className="w-10 h-14 object-cover rounded" />
+                                  <img src={m.poster} alt="" className="w-10 h-14 object-cover rounded flex-shrink-0" />
                                 ) : (
-                                  <div className="w-10 h-14 bg-gray-700 rounded flex items-center justify-center">🎬</div>
+                                  <div className="w-10 h-14 bg-gray-700 rounded flex items-center justify-center flex-shrink-0">🎬</div>
                                 )}
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <p className="text-sm font-medium truncate">{m.title}</p>
                                   <p className="text-xs opacity-50">{m.year}</p>
                                 </div>
+                                <span className="text-green-500 text-lg flex-shrink-0">+</span>
                               </div>
                             </button>
                           ))}
@@ -507,7 +541,7 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                   /* View Mode - Display movies nicely */
                   <>
                     {collectionMovies.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
                         {collectionMovies.map(m => (
                           <div
                             key={m.id}
@@ -517,32 +551,32 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
                               <img
                                 src={m.poster}
                                 alt={m.title}
-                                className="w-full h-48 object-cover"
+                                className="w-full h-32 sm:h-40 md:h-48 object-cover"
                               />
                             ) : (
-                              <div className="w-full h-48 bg-gray-700 flex items-center justify-center text-4xl">
+                              <div className="w-full h-32 sm:h-40 md:h-48 bg-gray-700 flex items-center justify-center text-4xl">
                                 🎬
                               </div>
                             )}
-                            <div className="p-3">
-                              <h4 className="font-medium truncate" title={m.title}>{m.title}</h4>
-                              <div className="flex items-center gap-2 mt-1">
+                            <div className="p-2 md:p-3">
+                              <h4 className="font-medium text-sm md:text-base truncate" title={m.title}>{m.title}</h4>
+                              <div className="flex items-center gap-1 md:gap-2 mt-1 flex-wrap">
                                 {m.year && <span className="text-xs opacity-50">{m.year}</span>}
                                 {m.genre && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded bg-purple-600/30 text-purple-300">
+                                  <span className="text-xs px-1 md:px-1.5 py-0.5 rounded bg-purple-600/30 text-purple-300">
                                     {m.genre}
                                   </span>
                                 )}
                               </div>
                               {m.rating > 0 && (
-                                <div className="flex gap-0.5 mt-2">
+                                <div className="flex gap-0.5 mt-1 md:mt-2">
                                   {[1, 2, 3, 4, 5].map(s => (
-                                    <span key={s} className={`text-sm ${s <= m.rating ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
+                                    <span key={s} className={`text-xs md:text-sm ${s <= m.rating ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
                                   ))}
                                 </div>
                               )}
                               {m.watched && (
-                                <span className="inline-block mt-2 text-xs px-1.5 py-0.5 rounded bg-green-600/30 text-green-300">
+                                <span className="inline-block mt-1 md:mt-2 text-xs px-1 md:px-1.5 py-0.5 rounded bg-green-600/30 text-green-300">
                                   ✓ Watched
                                 </span>
                               )}
