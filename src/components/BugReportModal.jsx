@@ -34,7 +34,7 @@ export default function BugReportModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg p-6 w-full max-w-md modal-content`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Report a Bug</h2>

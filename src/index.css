@@ -101,6 +101,17 @@ textarea:focus {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Modal safe area - ensures content doesn't overlap with mobile navigation */
+.modal-safe-area {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+}
+
+@media (max-width: 768px) {
+  .modal-safe-area {
+    padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  }
+}
+
 /* Card animations */
 @keyframes slide-in {
   from {

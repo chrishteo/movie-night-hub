@@ -126,8 +126,8 @@ export default function SpinWheel({
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
-      <div className={`${card} rounded-lg p-6 w-full max-w-xl`}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 pb-safe z-40 modal-safe-area">
+      <div className={`${card} rounded-lg p-6 w-full max-w-xl max-h-[85vh] overflow-auto`}>
         <h2 className="text-xl font-bold mb-4 text-center">🎡 Spin the Wheel</h2>
 
         {loading ? (

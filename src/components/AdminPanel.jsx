@@ -153,7 +153,7 @@ export default function AdminPanel({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content`}>
         {/* Header */}
         <div className={`flex items-center justify-between p-4 border-b ${border}`}>

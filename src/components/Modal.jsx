@@ -30,7 +30,7 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto modal-safe-area"
       onClick={handleBackdropClick}
     >
       <div className={`${card} rounded-lg w-full ${maxWidth} max-h-[90vh] overflow-auto relative`}>

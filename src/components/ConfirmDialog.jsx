@@ -19,7 +19,7 @@ export default function ConfirmDialog({
     : 'bg-purple-600 hover:bg-purple-700'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg p-6 w-full max-w-sm modal-content`}>
         <h3 className="text-lg font-bold mb-2">{title}</h3>
         <p className="opacity-70 mb-6">{message}</p>

@@ -29,7 +29,7 @@ export default function AddUserModal({ onAdd, onClose, darkMode }) {
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg p-6 w-full max-w-sm modal-content`}>
         <h2 className="text-xl font-bold mb-4">Add Person</h2>
         <form onSubmit={handleSubmit}>

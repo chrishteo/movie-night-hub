@@ -3,7 +3,7 @@ export default function WinnerOverlay({ movie, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-pointer"
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-pointer modal-safe-area"
       onClick={onClose}
     >
       <div className="text-center animate-pulse">

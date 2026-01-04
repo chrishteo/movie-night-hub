@@ -78,12 +78,12 @@ export default function VotingModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto modal-safe-area"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className={`${card} rounded-lg p-4 w-full max-w-lg max-h-[90vh] overflow-auto`}>
+      <div className={`${card} rounded-lg p-4 w-full max-w-lg max-h-[85vh] overflow-auto`}>
         {/* Header with close button */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold">

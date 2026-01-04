@@ -179,7 +179,7 @@ export default function Header({
 
       {/* Avatar edit modal */}
       {editingAvatar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
           <div className={`rounded-lg p-6 w-full max-w-xs modal-content ${
             darkMode ? 'bg-gray-800' : 'bg-white'
           }`}>

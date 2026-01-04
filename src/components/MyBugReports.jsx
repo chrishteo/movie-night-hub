@@ -35,7 +35,7 @@ export default function MyBugReports({
   const myReports = bugReports.filter(r => r.user_id === userId)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col modal-content`}>
         {/* Header */}
         <div className={`flex items-center justify-between p-4 border-b ${border}`}>

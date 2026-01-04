@@ -240,7 +240,7 @@ export default function Collections({ movies, onClose, darkMode, authUserId = nu
   })
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 modal-backdrop">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg w-full max-w-4xl max-h-[85vh] flex flex-col modal-content`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-700 flex items-center justify-between">

@@ -56,7 +56,7 @@ export default function Recommendations({
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto modal-safe-area">
       <div className={`${card} rounded-lg p-4 w-full max-w-lg max-h-[90vh] overflow-auto`}>
         <h2 className="text-lg font-bold mb-4">💡 AI Recommendations</h2>
 
