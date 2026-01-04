@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
@@ -1078,6 +1079,8 @@ export default function App() {
           darkMode={darkMode}
         />
       )}
+
+      <Analytics />
     </div>
   )
 }
