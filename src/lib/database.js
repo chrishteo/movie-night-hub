@@ -71,6 +71,17 @@ export async function deleteUser(id) {
 
 const MOVIES_PER_PAGE = 50
 
+// Fetch all movies without pagination (for features like SpinWheel, Voting)
+export async function getAllMovies() {
+  const { data, error } = await supabase
+    .from('movies')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function getMovies(page = 0, filters = {}) {
   const from = page * MOVIES_PER_PAGE
   const to = from + MOVIES_PER_PAGE - 1

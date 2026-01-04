@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { getAllMovies } from '../lib/database'
 import ParticipantSelector from './ParticipantSelector'
 
 export default function SpinWheel({
-  movies,
   users = [],
   onClose,
   onMoviePicked,
@@ -14,11 +14,28 @@ export default function SpinWheel({
     users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
   )
   const [prioritizeShared, setPrioritizeShared] = useState(false)
+  const [allMovies, setAllMovies] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch all movies when component mounts (needed for accurate counts across all users)
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const movies = await getAllMovies()
+        setAllMovies(movies)
+      } catch (err) {
+        console.error('Failed to fetch movies for spin wheel:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMovies()
+  }, [])
 
   // Filter movies by selected participants
   const participantMovies = selectedUsers.length > 0
-    ? movies.filter(m => selectedUsers.includes(m.added_by))
-    : movies
+    ? allMovies.filter(m => selectedUsers.includes(m.added_by))
+    : allMovies
 
   const unwatched = participantMovies.filter(m => !m.watched)
 
@@ -113,8 +130,15 @@ export default function SpinWheel({
       <div className={`${card} rounded-lg p-6 w-full max-w-xl`}>
         <h2 className="text-xl font-bold mb-4 text-center">🎡 Spin the Wheel</h2>
 
-        {/* Participant Selector */}
-        {users.length > 0 && (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+            <p className="text-gray-400">Loading movies...</p>
+          </div>
+        ) : (
+          <>
+            {/* Participant Selector */}
+            {users.length > 0 && (
           <ParticipantSelector
             users={users}
             selectedUsers={selectedUsers}
@@ -124,7 +148,7 @@ export default function SpinWheel({
             darkMode={darkMode}
             label="Whose movies to include?"
             showMovieCount={true}
-            movies={movies}
+            movies={allMovies}
           />
         )}
 
@@ -217,6 +241,9 @@ export default function SpinWheel({
           )}
         </div>
 
+          </>
+        )}
+
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -227,13 +254,15 @@ export default function SpinWheel({
           >
             Close
           </button>
-          <button
-            onClick={spin}
-            disabled={spinning || unwatched.length === 0}
-            className="flex-1 px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
-          >
-            {spinning ? 'Spinning...' : 'Spin!'}
-          </button>
+          {!loading && (
+            <button
+              onClick={spin}
+              disabled={spinning || unwatched.length === 0}
+              className="flex-1 px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+            >
+              {spinning ? 'Spinning...' : 'Spin!'}
+            </button>
+          )}
         </div>
       </div>
     </div>

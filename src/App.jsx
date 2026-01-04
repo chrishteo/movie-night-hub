@@ -834,7 +834,6 @@ export default function App() {
 
       {showWheel && (
         <SpinWheel
-          movies={movies}
           users={users}
           onClose={() => setShowWheel(false)}
           onMoviePicked={handleMoviePicked}
@@ -844,7 +843,6 @@ export default function App() {
 
       {showVoting && (
         <VotingModal
-          movies={movies}
           votes={votes}
           users={users}
           currentUser={currentUser}
