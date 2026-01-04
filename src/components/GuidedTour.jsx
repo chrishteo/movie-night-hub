@@ -156,7 +156,8 @@ export default function GuidedTour({ onComplete, onSkip, darkMode }) {
     }
 
     const padding = 16
-    const tooltipHeight = 200
+    const spotlightPadding = 8 // Must match the spotlight padding around target
+    const tooltipHeight = 240 // Increased to account for actual content height
     const tooltipWidth = Math.min(320, window.innerWidth - 32)
 
     let top, left
@@ -165,15 +166,17 @@ export default function GuidedTour({ onComplete, onSkip, darkMode }) {
     const position = (isMobile && step.mobilePosition) ? step.mobilePosition : (step.position || 'bottom')
 
     if (position === 'bottom') {
-      top = targetRect.top + targetRect.height + padding
+      // Position below the spotlight (target + spotlight padding + gap)
+      top = targetRect.top + targetRect.height + spotlightPadding + padding
       // If tooltip would go off bottom, flip to top
       if (top + tooltipHeight > window.innerHeight - padding) {
-        top = targetRect.top - tooltipHeight - padding
+        top = targetRect.top - spotlightPadding - tooltipHeight - padding
       }
     } else {
-      top = targetRect.top - tooltipHeight - padding
+      // Position above the spotlight (accounting for spotlight padding)
+      top = targetRect.top - spotlightPadding - tooltipHeight - padding
       if (top < padding) {
-        top = targetRect.top + targetRect.height + padding
+        top = targetRect.top + targetRect.height + spotlightPadding + padding
       }
     }
 
