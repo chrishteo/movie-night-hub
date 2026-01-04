@@ -406,6 +406,11 @@ Submit a bug report in the app - you should receive an email!
 - Announcement system with dismissible banners
 
 ### Mobile Improvements
+- **Bottom Navigation**: All 12 features accessible via horizontal scroll
+  - Add, Select, Hot, Spin, Vote, MOTW, Schedule, History, AI Recs, Collections, Share, Stats
+- **Collections**: Mobile-friendly drill-down layout
+  - Full-width collection list, tap to view details
+  - Back arrow navigation, responsive movie grids
 - Modal safe area padding for phones with navigation gestures
 - Tutorial tooltip no longer overlaps bottom nav buttons
 - Improved touch targets and scrolling
