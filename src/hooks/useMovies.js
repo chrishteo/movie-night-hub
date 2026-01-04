@@ -9,7 +9,7 @@ import {
   subscribeToMovies
 } from '../lib/database'
 
-export function useMovies(authUserId = null) {
+export function useMovies(authUserId = null, serverFilters = {}) {
   const [movies, setMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -17,8 +17,9 @@ export function useMovies(authUserId = null) {
   const [hasMore, setHasMore] = useState(false)
   const [total, setTotal] = useState(0)
   const pageRef = useRef(0)
+  const filtersRef = useRef(serverFilters)
 
-  const fetchMovies = useCallback(async (reset = true) => {
+  const fetchMovies = useCallback(async (reset = true, filters = filtersRef.current) => {
     try {
       if (reset) {
         setLoading(true)
@@ -27,7 +28,7 @@ export function useMovies(authUserId = null) {
         setLoadingMore(true)
       }
 
-      const result = await getMovies(pageRef.current)
+      const result = await getMovies(pageRef.current, filters)
 
       if (reset) {
         setMovies(result.movies)
@@ -53,19 +54,55 @@ export function useMovies(authUserId = null) {
     await fetchMovies(false)
   }, [fetchMovies, loadingMore, hasMore])
 
+  // Refetch when server filters change
+  useEffect(() => {
+    const filtersChanged = JSON.stringify(serverFilters) !== JSON.stringify(filtersRef.current)
+    filtersRef.current = serverFilters
+
+    if (filtersChanged) {
+      fetchMovies(true, serverFilters)
+    }
+  }, [serverFilters, fetchMovies])
+
   useEffect(() => {
     fetchMovies()
 
     // Subscribe to real-time updates
     const subscription = subscribeToMovies((payload) => {
+      // Check if the movie matches current server filter
+      const matchesFilter = (movie) => !filtersRef.current.addedBy ||
+        movie?.added_by === filtersRef.current.addedBy
+
       if (payload.eventType === 'INSERT' && payload.new) {
-        setMovies(prev => [payload.new, ...prev])
-        setTotal(prev => prev + 1)
+        if (matchesFilter(payload.new)) {
+          setMovies(prev => [payload.new, ...prev])
+          setTotal(prev => prev + 1)
+        }
       } else if (payload.eventType === 'UPDATE' && payload.new) {
-        setMovies(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
+        setMovies(prev => {
+          const wasInView = prev.some(m => m.id === payload.new.id)
+          const shouldBeInView = matchesFilter(payload.new)
+
+          if (wasInView && shouldBeInView) {
+            return prev.map(m => m.id === payload.new.id ? payload.new : m)
+          } else if (wasInView && !shouldBeInView) {
+            setTotal(t => t - 1)
+            return prev.filter(m => m.id !== payload.new.id)
+          } else if (!wasInView && shouldBeInView) {
+            setTotal(t => t + 1)
+            return [payload.new, ...prev]
+          }
+          return prev
+        })
       } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-        setMovies(prev => prev.filter(m => m.id !== payload.old.id))
-        setTotal(prev => prev - 1)
+        setMovies(prev => {
+          const wasInView = prev.some(m => m.id === payload.old.id)
+          if (wasInView) {
+            setTotal(t => t - 1)
+            return prev.filter(m => m.id !== payload.old.id)
+          }
+          return prev
+        })
       }
     })
 

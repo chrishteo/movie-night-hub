@@ -71,15 +71,23 @@ export async function deleteUser(id) {
 
 const MOVIES_PER_PAGE = 50
 
-export async function getMovies(page = 0) {
+export async function getMovies(page = 0, filters = {}) {
   const from = page * MOVIES_PER_PAGE
   const to = from + MOVIES_PER_PAGE - 1
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('movies')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .range(from, to)
+
+  // Apply server-side filters
+  if (filters.addedBy) {
+    query = query.eq('added_by', filters.addedBy)
+  }
+
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
 
   if (error) throw error
   return {

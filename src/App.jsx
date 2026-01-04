@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
@@ -48,9 +48,39 @@ export default function App() {
     return saved !== null ? JSON.parse(saved) : true
   })
 
+  // UI state - moved up so serverFilters can use filters.view
+  const [filters, setFilters] = useState({
+    view: 'mine',
+    genre: '',
+    mood: '',
+    streaming: '',
+    watched: 'all',
+    favorites: false,
+    sortBy: 'created_at'
+  })
+
   // Data hooks - must be called unconditionally
   // Pass auth user ID for RLS security
   const authUserId = user?.id || null
+
+  // useUsers must be called before useMovies to get currentUser for server filters
+  const {
+    users,
+    currentUser,
+    loading: usersLoading,
+    selectUser,
+    addUser,
+    updateUser,
+    deleteUser
+  } = useUsers(user)
+
+  // Server-side filters for pagination to work correctly
+  const serverFilters = useMemo(() => {
+    if (filters.view === 'mine' && currentUser) {
+      return { addedBy: currentUser }
+    }
+    return {}
+  }, [filters.view, currentUser])
 
   const {
     movies,
@@ -65,17 +95,7 @@ export default function App() {
     toggleFavorite,
     loadMore,
     canModifyMovie
-  } = useMovies(authUserId)
-
-  const {
-    users,
-    currentUser,
-    loading: usersLoading,
-    selectUser,
-    addUser,
-    updateUser,
-    deleteUser
-  } = useUsers(user)
+  } = useMovies(authUserId, serverFilters)
 
   const {
     votes,
@@ -107,17 +127,6 @@ export default function App() {
     skipTour,
     startTour
   } = useTutorial()
-
-  // UI state
-  const [filters, setFilters] = useState({
-    view: 'mine',
-    genre: '',
-    mood: '',
-    streaming: '',
-    watched: 'all',
-    favorites: false,
-    sortBy: 'created_at'
-  })
 
   // View mode: 'grid' or 'list'
   const [viewMode, setViewMode] = useState(() => {
