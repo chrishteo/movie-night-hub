@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Avatar } from './AvatarPicker'
 import { formatDate } from '../utils/helpers'
 
-const TABS = ['Users', 'Movies', 'Announcements', 'Bug Reports']
+const TABS = ['Users', 'Movies', 'Announcements', 'Changelog', 'Bug Reports']
 
 const STATUS_COLORS = {
   open: 'bg-yellow-500',
@@ -16,6 +16,12 @@ const ANNOUNCEMENT_TYPES = [
   { value: 'warning', label: 'Warning', color: 'bg-yellow-500' },
   { value: 'update', label: 'Update', color: 'bg-green-500' },
   { value: 'maintenance', label: 'Maintenance', color: 'bg-red-500' }
+]
+
+const CHANGELOG_TYPES = [
+  { value: 'feature', label: 'New Feature', color: 'bg-green-500' },
+  { value: 'fix', label: 'Bug Fix', color: 'bg-red-500' },
+  { value: 'improvement', label: 'Improvement', color: 'bg-blue-500' }
 ]
 
 export default function AdminPanel({
@@ -38,7 +44,13 @@ export default function AdminPanel({
   bugReports,
   onFetchBugReports,
   onEditBugReport,
-  onDeleteBugReport
+  onDeleteBugReport,
+  // Changelog
+  changelog,
+  onFetchChangelog,
+  onAddChangelog,
+  onEditChangelog,
+  onDeleteChangelog
 }) {
   const [activeTab, setActiveTab] = useState('Users')
   const [searchQuery, setSearchQuery] = useState('')
@@ -60,6 +72,16 @@ export default function AdminPanel({
   const [bugReportStatus, setBugReportStatus] = useState('open')
   const [statusFilter, setStatusFilter] = useState('all')
 
+  // Changelog form state
+  const [showChangelogForm, setShowChangelogForm] = useState(false)
+  const [editingChangelog, setEditingChangelog] = useState(null)
+  const [changelogForm, setChangelogForm] = useState({
+    title: '',
+    description: '',
+    type: 'feature',
+    version: ''
+  })
+
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
   const input = darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
@@ -68,7 +90,8 @@ export default function AdminPanel({
   useEffect(() => {
     onFetchAnnouncements(false) // Get all announcements, not just active
     onFetchBugReports()
-  }, [onFetchAnnouncements, onFetchBugReports])
+    onFetchChangelog()
+  }, [onFetchAnnouncements, onFetchBugReports, onFetchChangelog])
 
   // Filter movies by search
   const filteredMovies = movies.filter(m =>
@@ -150,6 +173,48 @@ export default function AdminPanel({
     setSelectedBugReport(report)
     setBugReportStatus(report.status)
     setBugReportNotes(report.admin_notes || '')
+  }
+
+  // Handle changelog form submit
+  const handleChangelogSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      if (editingChangelog) {
+        await onEditChangelog(editingChangelog.id, {
+          title: changelogForm.title,
+          description: changelogForm.description,
+          type: changelogForm.type,
+          version: changelogForm.version || null
+        })
+      } else {
+        await onAddChangelog(
+          changelogForm.title,
+          changelogForm.description,
+          changelogForm.type,
+          changelogForm.version || null
+        )
+      }
+      setShowChangelogForm(false)
+      setEditingChangelog(null)
+      setChangelogForm({ title: '', description: '', type: 'feature', version: '' })
+    } catch (err) {
+      console.error('Error saving changelog:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle editing changelog
+  const startEditChangelog = (entry) => {
+    setEditingChangelog(entry)
+    setChangelogForm({
+      title: entry.title,
+      description: entry.description,
+      type: entry.type,
+      version: entry.version || ''
+    })
+    setShowChangelogForm(true)
   }
 
   return (
@@ -414,6 +479,135 @@ export default function AdminPanel({
                       className="flex-1 px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 disabled:opacity-50"
                     >
                       {loading ? 'Saving...' : (editingAnnouncement ? 'Update' : 'Create')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Changelog Tab */}
+          {activeTab === 'Changelog' && (
+            <div className="space-y-4">
+              {!showChangelogForm ? (
+                <>
+                  <button
+                    onClick={() => setShowChangelogForm(true)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded"
+                  >
+                    + New Entry
+                  </button>
+                  <div className="space-y-2">
+                    {changelog.map(entry => (
+                      <div
+                        key={entry.id}
+                        className={`p-4 rounded-lg ${
+                          darkMode ? 'bg-gray-700/50' : 'bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 text-xs rounded text-white ${
+                                CHANGELOG_TYPES.find(t => t.value === entry.type)?.color || 'bg-gray-500'
+                              }`}>
+                                {CHANGELOG_TYPES.find(t => t.value === entry.type)?.label || entry.type}
+                              </span>
+                              {entry.version && (
+                                <span className="px-2 py-0.5 text-xs rounded bg-gray-500 text-white">
+                                  v{entry.version}
+                                </span>
+                              )}
+                            </div>
+                            <div className="font-medium">{entry.title}</div>
+                            <div className="text-sm text-gray-400 mt-1">{entry.description}</div>
+                            <div className="text-xs text-gray-500 mt-2">
+                              {formatDate(entry.created_at)}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startEditChangelog(entry)}
+                              className="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-500"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Delete this changelog entry?')) {
+                                  onDeleteChangelog(entry.id)
+                                }
+                              }}
+                              className="px-3 py-1 text-sm rounded bg-red-600 hover:bg-red-500"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {changelog.length === 0 && (
+                      <p className="text-center text-gray-400 py-8">No changelog entries yet</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <form onSubmit={handleChangelogSubmit} className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {editingChangelog ? 'Edit Entry' : 'New Entry'}
+                  </h3>
+                  <input
+                    type="text"
+                    placeholder="Title"
+                    value={changelogForm.title}
+                    onChange={(e) => setChangelogForm(prev => ({ ...prev, title: e.target.value }))}
+                    required
+                    className={`w-full px-3 py-2 rounded border ${input}`}
+                  />
+                  <textarea
+                    placeholder="Description"
+                    value={changelogForm.description}
+                    onChange={(e) => setChangelogForm(prev => ({ ...prev, description: e.target.value }))}
+                    required
+                    rows={3}
+                    className={`w-full px-3 py-2 rounded border ${input}`}
+                  />
+                  <div className="flex gap-4">
+                    <select
+                      value={changelogForm.type}
+                      onChange={(e) => setChangelogForm(prev => ({ ...prev, type: e.target.value }))}
+                      className={`flex-1 px-3 py-2 rounded border ${input}`}
+                    >
+                      {CHANGELOG_TYPES.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Version (optional)"
+                      value={changelogForm.version}
+                      onChange={(e) => setChangelogForm(prev => ({ ...prev, version: e.target.value }))}
+                      className={`flex-1 px-3 py-2 rounded border ${input}`}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangelogForm(false)
+                        setEditingChangelog(null)
+                        setChangelogForm({ title: '', description: '', type: 'feature', version: '' })
+                      }}
+                      className="flex-1 px-4 py-2 rounded bg-gray-600 hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 disabled:opacity-50"
+                    >
+                      {loading ? 'Saving...' : (editingChangelog ? 'Update' : 'Create')}
                     </button>
                   </div>
                 </form>

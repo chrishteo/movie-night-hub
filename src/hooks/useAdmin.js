@@ -12,7 +12,12 @@ import {
   createBugReport,
   updateBugReport,
   deleteBugReport,
-  subscribeToAnnouncements
+  subscribeToAnnouncements,
+  getChangelog,
+  createChangelogEntry,
+  updateChangelogEntry,
+  deleteChangelogEntry,
+  subscribeToChangelog
 } from '../lib/database'
 
 export function useAdmin(authUserId = null) {
@@ -20,6 +25,7 @@ export function useAdmin(authUserId = null) {
   const [loading, setLoading] = useState(true)
   const [announcements, setAnnouncements] = useState([])
   const [bugReports, setBugReports] = useState([])
+  const [changelog, setChangelog] = useState([])
 
   // Check if current user is admin
   useEffect(() => {
@@ -131,15 +137,87 @@ export function useAdmin(authUserId = null) {
 
   const editBugReport = useCallback(async (id, updates) => {
     if (!isAdmin) throw new Error('Not authorized')
+
+    // Get the current bug report to check if status is changing to resolved
+    const currentReport = bugReports.find(r => r.id === id)
+    const isBeingResolved = updates.status === 'resolved' && currentReport?.status !== 'resolved'
+
     const updated = await updateBugReport(id, updates)
     setBugReports(prev => prev.map(r => r.id === id ? updated : r))
+
+    // Auto-create changelog entry when bug is resolved
+    if (isBeingResolved && currentReport) {
+      try {
+        const newEntry = await createChangelogEntry(
+          `Fixed: ${currentReport.title}`,
+          currentReport.description || 'Bug has been fixed.',
+          'fix',
+          null,
+          null
+        )
+        setChangelog(prev => [newEntry, ...prev])
+      } catch (err) {
+        console.error('Failed to auto-create changelog entry:', err)
+      }
+    }
+
     return updated
-  }, [isAdmin])
+  }, [isAdmin, bugReports])
 
   const removeBugReport = useCallback(async (id) => {
     if (!isAdmin) throw new Error('Not authorized')
     await deleteBugReport(id)
     setBugReports(prev => prev.filter(r => r.id !== id))
+  }, [isAdmin])
+
+  // Fetch changelog
+  const fetchChangelog = useCallback(async () => {
+    try {
+      const data = await getChangelog()
+      setChangelog(data)
+      return data
+    } catch (err) {
+      console.error('Error fetching changelog:', err)
+      return []
+    }
+  }, [])
+
+  // Subscribe to changelog changes
+  useEffect(() => {
+    const subscription = subscribeToChangelog((payload) => {
+      if (payload.eventType === 'INSERT' && payload.new) {
+        setChangelog(prev => [payload.new, ...prev])
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
+        setChangelog(prev => prev.map(c => c.id === payload.new.id ? payload.new : c))
+      } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+        setChangelog(prev => prev.filter(c => c.id !== payload.old.id))
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Changelog actions
+  const addChangelogEntry = useCallback(async (title, description, type = 'feature', version = null, createdBy = null) => {
+    if (!isAdmin) throw new Error('Not authorized')
+    const newEntry = await createChangelogEntry(title, description, type, version, createdBy)
+    setChangelog(prev => [newEntry, ...prev])
+    return newEntry
+  }, [isAdmin])
+
+  const editChangelogEntry = useCallback(async (id, updates) => {
+    if (!isAdmin) throw new Error('Not authorized')
+    const updated = await updateChangelogEntry(id, updates)
+    setChangelog(prev => prev.map(c => c.id === id ? updated : c))
+    return updated
+  }, [isAdmin])
+
+  const removeChangelogEntry = useCallback(async (id) => {
+    if (!isAdmin) throw new Error('Not authorized')
+    await deleteChangelogEntry(id)
+    setChangelog(prev => prev.filter(c => c.id !== id))
   }, [isAdmin])
 
   return {
@@ -157,6 +235,12 @@ export function useAdmin(authUserId = null) {
     submitBugReport,
     editBugReport,
     removeBugReport,
+    // Changelog
+    changelog,
+    fetchChangelog,
+    addChangelogEntry,
+    editChangelogEntry,
+    removeChangelogEntry,
     // Admin actions
     toggleUserAdmin,
     removeUser,

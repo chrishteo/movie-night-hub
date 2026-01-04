@@ -697,3 +697,60 @@ export function subscribeToAnnouncements(callback) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, callback)
     .subscribe()
 }
+
+// ============ CHANGELOG ============
+
+export async function getChangelog() {
+  const { data, error } = await supabase
+    .from('changelog')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function createChangelogEntry(title, description, type = 'feature', version = null, createdBy = null) {
+  const { data, error } = await supabase
+    .from('changelog')
+    .insert([{
+      title,
+      description,
+      type,
+      version,
+      created_by: createdBy
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateChangelogEntry(id, updates) {
+  const { data, error } = await supabase
+    .from('changelog')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteChangelogEntry(id) {
+  const { error } = await supabase
+    .from('changelog')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export function subscribeToChangelog(callback) {
+  return supabase
+    .channel('changelog-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'changelog' }, callback)
+    .subscribe()
+}

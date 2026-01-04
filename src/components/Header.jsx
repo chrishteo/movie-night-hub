@@ -16,7 +16,8 @@ export default function Header({
   onOpenAdmin,
   onOpenBugReport,
   onOpenMyBugReports,
-  onStartTutorial
+  onStartTutorial,
+  onOpenWhatsNew
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [editingAvatar, setEditingAvatar] = useState(false)
@@ -124,6 +125,16 @@ export default function Header({
                   >
                     <span>📖</span>
                     <span>View Tutorial</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onOpenWhatsNew?.()
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20"
+                  >
+                    <span>🎉</span>
+                    <span>What's New</span>
                   </button>
                   {onSignOut && (
                     <>

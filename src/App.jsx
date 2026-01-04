@@ -37,6 +37,7 @@ import BugReportModal from './components/BugReportModal'
 import MyBugReports from './components/MyBugReports'
 import AnnouncementBanner from './components/AnnouncementBanner'
 import GuidedTour from './components/GuidedTour'
+import WhatsNewModal from './components/WhatsNewModal'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -108,6 +109,7 @@ export default function App() {
     isAdmin,
     announcements,
     bugReports,
+    changelog,
     fetchAnnouncements,
     addAnnouncement,
     editAnnouncement,
@@ -116,6 +118,10 @@ export default function App() {
     submitBugReport,
     editBugReport,
     removeBugReport,
+    fetchChangelog,
+    addChangelogEntry,
+    editChangelogEntry,
+    removeChangelogEntry,
     toggleUserAdmin,
     removeUser,
     removeMovie
@@ -158,6 +164,8 @@ export default function App() {
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [showBugReport, setShowBugReport] = useState(false)
   const [showMyBugReports, setShowMyBugReports] = useState(false)
+  const [showWhatsNew, setShowWhatsNew] = useState(false)
+  const [hasCheckedChangelog, setHasCheckedChangelog] = useState(false)
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -190,6 +198,47 @@ export default function App() {
       }
     }
   }, [movies])
+
+  // Auto-show What's New modal if there are new entries since last visit
+  useEffect(() => {
+    if (hasCheckedChangelog || !isAuthenticated) return
+
+    const checkForNewChangelog = async () => {
+      try {
+        await fetchChangelog()
+        setHasCheckedChangelog(true)
+      } catch (err) {
+        console.error('Failed to fetch changelog:', err)
+      }
+    }
+
+    checkForNewChangelog()
+  }, [isAuthenticated, hasCheckedChangelog, fetchChangelog])
+
+  // Show modal when changelog is loaded and has new entries
+  useEffect(() => {
+    if (!hasCheckedChangelog || changelog.length === 0) return
+
+    const lastSeenTimestamp = localStorage.getItem('movienight-changelog-seen')
+    const latestEntry = changelog[0]
+
+    if (latestEntry && latestEntry.created_at) {
+      const latestTimestamp = new Date(latestEntry.created_at).getTime()
+      const lastSeen = lastSeenTimestamp ? parseInt(lastSeenTimestamp, 10) : 0
+
+      if (latestTimestamp > lastSeen) {
+        setShowWhatsNew(true)
+      }
+    }
+  }, [hasCheckedChangelog, changelog])
+
+  // Save timestamp when user closes What's New modal
+  const handleCloseWhatsNew = () => {
+    setShowWhatsNew(false)
+    if (changelog.length > 0 && changelog[0].created_at) {
+      localStorage.setItem('movienight-changelog-seen', new Date(changelog[0].created_at).getTime().toString())
+    }
+  }
 
   // Show loading screen while checking auth
   if (authLoading) {
@@ -469,6 +518,7 @@ export default function App() {
         onOpenBugReport={() => setShowBugReport(true)}
         onOpenMyBugReports={() => setShowMyBugReports(true)}
         onStartTutorial={startTour}
+        onOpenWhatsNew={() => setShowWhatsNew(true)}
       />
 
       {/* Current Movie of the Week Banner */}
@@ -1041,6 +1091,32 @@ export default function App() {
               addToast('Failed to delete bug report', 'error')
             }
           }}
+          changelog={changelog}
+          onFetchChangelog={fetchChangelog}
+          onAddChangelog={async (title, description, type, version) => {
+            try {
+              await addChangelogEntry(title, description, type, version, users.find(u => u.name === currentUser)?.id)
+              addToast('Changelog entry created', 'success')
+            } catch (err) {
+              addToast('Failed to create changelog entry', 'error')
+            }
+          }}
+          onEditChangelog={async (id, updates) => {
+            try {
+              await editChangelogEntry(id, updates)
+              addToast('Changelog entry updated', 'success')
+            } catch (err) {
+              addToast('Failed to update changelog entry', 'error')
+            }
+          }}
+          onDeleteChangelog={async (id) => {
+            try {
+              await removeChangelogEntry(id)
+              addToast('Changelog entry deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete changelog entry', 'error')
+            }
+          }}
         />
       )}
 
@@ -1064,6 +1140,16 @@ export default function App() {
           bugReports={bugReports}
           onFetchBugReports={fetchBugReports}
           userId={users.find(u => u.name === currentUser)?.id}
+          darkMode={darkMode}
+        />
+      )}
+
+      {/* What's New Modal */}
+      {showWhatsNew && (
+        <WhatsNewModal
+          onClose={handleCloseWhatsNew}
+          changelog={changelog}
+          onFetchChangelog={fetchChangelog}
           darkMode={darkMode}
         />
       )}
