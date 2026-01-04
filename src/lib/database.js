@@ -700,11 +700,12 @@ export function subscribeToAnnouncements(callback) {
 
 // ============ CHANGELOG ============
 
-export async function getChangelog() {
+export async function getChangelog(limit = 20) {
   const { data, error } = await supabase
     .from('changelog')
     .select('*')
     .order('created_at', { ascending: false })
+    .limit(limit)
 
   if (error) throw error
   return data
