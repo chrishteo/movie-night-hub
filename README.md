@@ -210,8 +210,26 @@ Use the dropdowns to filter by:
 - Genre
 - Mood
 - Streaming service
-- Watched/Unwatched status
+- Watched status (see below)
 - Favorites only
+- Added by (filter by who added the movie)
+
+#### Watched Filter Options
+
+| Filter | What it shows |
+|--------|---------------|
+| **All** | All movies, regardless of watched status |
+| **Watched (global)** | Movies that **anyone** has watched |
+| **Unwatched (global)** | Movies that **nobody** has watched yet |
+| **Watched by me** | Movies **you personally** marked as watched |
+| **Not watched by me** | Movies you haven't watched, even if others have |
+
+#### "All" vs "Mine" Tabs
+
+- **All**: Shows all movies in the collection from all users
+- **Mine**: Shows only movies **you added** to the collection (not movies you watched)
+
+To see movies you've watched regardless of who added them, use the "Watched by me" filter.
 
 ## Customization
 
