@@ -11,6 +11,13 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
   - Spin the Wheel: Random movie picker with participant selection
   - Voting System: Users vote yes/no on movies with participant selection
   - Movie of the Week: Schedule picks with history
+- **Watch Invites**: Log movie nights and send invites to participants
+  - Each user confirms what they watched independently
+  - Accept with optional rating or decline
+  - Auto-popup on login for pending invites
+- **Per-User Tracking**: Individual watched status and ratings per user
+  - "Watched by me" / "Not watched by me" filters
+  - Average ratings with individual user breakdowns
 - **AI-Powered** (via Anthropic Claude):
   - Auto-fill movie details by searching
   - Smart recommendations based on your collection
@@ -151,7 +158,9 @@ movie-night-hub/
 │   ├── functions/              # Edge functions
 │   └── migrations/             # Feature migrations
 │       ├── collection_sharing.sql
-│       └── collection_sharing_fix.sql
+│       ├── collection_sharing_fix.sql
+│       ├── user_movie_status.sql   # Per-user watched/ratings
+│       └── watch_invites.sql       # Watch invite system
 ├── src/
 │   ├── components/             # React components
 │   ├── hooks/                  # Custom React hooks
@@ -281,6 +290,32 @@ UPDATE collections SET user_id = 'YOUR_AUTH_ID' WHERE user_id IS NULL;
 
 ---
 
+## Watch Invites & Per-User Tracking Setup
+
+To enable the watch invites and per-user tracking features:
+
+### 1. Run User Movie Status Migration
+
+In Supabase SQL Editor, run `supabase/migrations/user_movie_status.sql` to create:
+- `user_movie_status` table for per-user watched/rating tracking
+- RLS policies for user access
+
+### 2. Run Watch Invites Migration
+
+In Supabase SQL Editor, run `supabase/migrations/watch_invites.sql` to create:
+- `watch_invites` table for movie night invites
+- RLS policies for invite management
+
+### 3. Enable Real-time (Optional)
+
+For real-time invite notifications:
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE user_movie_status;
+ALTER PUBLICATION supabase_realtime ADD TABLE watch_invites;
+```
+
+---
+
 ## Email Notifications Setup
 
 ### 1. Create Resend Account
@@ -354,6 +389,17 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Watch Invites & Per-User Tracking
+- **Watch Invites**: When you log a movie night, other participants receive an invite to confirm they watched it
+- **Per-User Ratings**: Each user can now rate movies independently - see average ratings and who rated what
+- **New Filters**: "Watched by me" and "Not watched by me" to track your personal watch history
+- **Invite Notifications**: Badge shows pending invites, auto-popup on login if unread
+- **How it works**:
+  1. Spin the wheel → Pick a movie → Log Movie Night with participants
+  2. You get marked as watched immediately
+  3. Others receive an invite they can Accept (with rating) or Decline
+  4. Everyone's watch status is tracked independently
 
 ### Collections Feature
 - Create custom collections with emoji and color themes
