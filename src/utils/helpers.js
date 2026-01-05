@@ -53,7 +53,7 @@ export function decodeShareData(encoded) {
   }
 }
 
-export function filterMovies(movies, filters, currentUser, myStatuses = {}) {
+export function filterMovies(movies, filters, currentUser, myStatuses = {}, allUserStatuses = []) {
   return movies.filter(m => {
     // Search by title (case-insensitive)
     if (filters.search) {
@@ -68,8 +68,15 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}) {
     if (filters.mood && m.mood !== filters.mood) return false
 
     // Watched filter - supports both global and per-user options
-    if (filters.watched === 'watched' && !m.watched) return false
-    if (filters.watched === 'unwatched' && m.watched) return false
+    // Global watched: check movie's watched flag OR if any user has watched via per-user system
+    if (filters.watched === 'watched') {
+      const anyUserWatched = allUserStatuses.some(s => s.movie_id === m.id && s.watched)
+      if (!m.watched && !anyUserWatched) return false
+    }
+    if (filters.watched === 'unwatched') {
+      const anyUserWatched = allUserStatuses.some(s => s.movie_id === m.id && s.watched)
+      if (m.watched || anyUserWatched) return false
+    }
     if (filters.watched === 'watchedByMe') {
       const myStatus = myStatuses[m.id]
       if (!myStatus?.watched) return false

@@ -110,6 +110,7 @@ export default function App() {
 
   // Per-user movie status (watched/rating)
   const {
+    statuses: allUserStatuses,
     myStatuses,
     toggleMyWatched,
     setMyRating,
@@ -117,15 +118,23 @@ export default function App() {
     getMovieStatuses,
     getAverageRating,
     getRatingCount,
-    getWatchedCount
+    getWatchedCount,
+    refetch: refetchMyStatuses
   } = useUserMovieStatus(authUserId)
 
   const {
     invites,
     pendingCount: invitePendingCount,
-    acceptInvite,
+    acceptInvite: rawAcceptInvite,
     declineInvite
   } = useInvites(authUserId)
+
+  // Wrapper that also refetches myStatuses after accepting
+  const handleAcceptInvite = async (invite, rating) => {
+    await rawAcceptInvite(invite, rating)
+    // Refetch to ensure filters work correctly
+    await refetchMyStatuses()
+  }
 
   const {
     isAdmin,
@@ -295,7 +304,7 @@ export default function App() {
 
   // Filter and sort movies
   const filteredMovies = sortMovies(
-    filterMovies(movies, filters, currentUser, myStatuses),
+    filterMovies(movies, filters, currentUser, myStatuses, allUserStatuses),
     filters.sortBy
   )
 
@@ -1046,7 +1055,7 @@ export default function App() {
       {showInvites && (
         <InvitesModal
           invites={invites}
-          onAccept={acceptInvite}
+          onAccept={handleAcceptInvite}
           onDecline={declineInvite}
           onClose={() => setShowInvites(false)}
           darkMode={darkMode}
