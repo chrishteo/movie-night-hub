@@ -23,7 +23,14 @@ export default function MovieCard({
   bulkSelectMode,
   isSelected,
   onToggleSelect,
-  canModify = true
+  canModify = true,
+  // Per-user status props
+  myStatus,
+  averageRating,
+  ratingCount = 0,
+  watchedCount = 0,
+  onToggleMyWatched,
+  onRateMe
 }) {
   // Find user who added this movie
   const addedByUser = users?.find(u => u.name === movie.added_by)
@@ -63,10 +70,14 @@ export default function MovieCard({
 
   const handleTouchEnd = () => {
     if (swipeX > 80) {
-      // Swipe right - mark watched
+      // Swipe right - mark watched (per-user if available, else global)
       setCheckBounce(true)
       setTimeout(() => setCheckBounce(false), 300)
-      onToggleWatched(movie.id)
+      if (onToggleMyWatched) {
+        onToggleMyWatched(movie.id)
+      } else {
+        onToggleWatched(movie.id)
+      }
     } else if (swipeX < -80) {
       // Swipe left - toggle favorite
       setHeartPulse(true)
@@ -88,8 +99,17 @@ export default function MovieCard({
     e.stopPropagation()
     setCheckBounce(true)
     setTimeout(() => setCheckBounce(false), 300)
-    onToggleWatched(movie.id)
+    // Use per-user watched if available, else global
+    if (onToggleMyWatched) {
+      onToggleMyWatched(movie.id)
+    } else {
+      onToggleWatched(movie.id)
+    }
   }
+
+  // Determine watched state - prefer per-user status if available
+  const isWatchedByMe = myStatus?.watched ?? false
+  const myRating = myStatus?.rating ?? 0
 
   // Swipe indicator colors
   const swipeStyle = {
@@ -180,18 +200,39 @@ export default function MovieCard({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map(s => (
-                <button
-                  key={s}
-                  onClick={(e) => { e.stopPropagation(); onRate && onRate(movie.id, s); }}
-                  className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'} hover:text-yellow-300 hover:scale-125 transition-transform`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {/* Per-user rating stars (if available) */}
+            {onRateMe ? (
+              <div className="flex gap-0.5" title="Your rating">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <button
+                    key={s}
+                    onClick={(e) => { e.stopPropagation(); onRateMe(movie.id, s); }}
+                    className={`text-xs ${s <= myRating ? 'text-yellow-400' : 'text-gray-500'} hover:text-yellow-300 hover:scale-125 transition-transform`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <button
+                    key={s}
+                    onClick={(e) => { e.stopPropagation(); onRate && onRate(movie.id, s); }}
+                    className={`text-xs ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'} hover:text-yellow-300 hover:scale-125 transition-transform`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Average rating from all users */}
+            {averageRating != null && ratingCount > 0 && (
+              <span className="text-xs text-gray-400" title={`Average from ${ratingCount} user${ratingCount > 1 ? 's' : ''}`}>
+                Avg: {averageRating.toFixed(1)}★ ({ratingCount})
+              </span>
+            )}
             {movie.imdb_rating ? (
               <span className="px-1 py-0.5 bg-amber-500 rounded text-xs font-bold" title="IMDB">
                 {movie.imdb_rating.toFixed(1)}
@@ -221,14 +262,27 @@ export default function MovieCard({
           <Avatar avatar={addedByUser?.avatar} size="sm" />
           <span className="text-xs opacity-50">{movie.added_by}</span>
         </div>
-        <button
-          onClick={handleWatchedClick}
-          className={`px-2 py-0.5 rounded text-xs ${
-            movie.watched ? 'bg-green-600' : 'bg-gray-600'
-          } hover:opacity-80 ${checkBounce ? 'animate-check-bounce' : ''}`}
-        >
-          {movie.watched ? '✓ Watched' : 'Unwatched'}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Show how many users have watched (if per-user tracking enabled) */}
+          {watchedCount > 0 && (
+            <span className="text-xs text-gray-400" title={`${watchedCount} user${watchedCount > 1 ? 's' : ''} watched`}>
+              ({watchedCount} watched)
+            </span>
+          )}
+          <button
+            onClick={handleWatchedClick}
+            className={`px-2 py-0.5 rounded text-xs ${
+              onToggleMyWatched
+                ? (isWatchedByMe ? 'bg-green-600' : 'bg-gray-600')
+                : (movie.watched ? 'bg-green-600' : 'bg-gray-600')
+            } hover:opacity-80 ${checkBounce ? 'animate-check-bounce' : ''}`}
+          >
+            {onToggleMyWatched
+              ? (isWatchedByMe ? '✓ Watched' : 'Unwatched')
+              : (movie.watched ? '✓ Watched' : 'Unwatched')
+            }
+          </button>
+        </div>
       </div>
       </div>
     </div>

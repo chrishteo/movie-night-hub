@@ -20,7 +20,16 @@ export default function MovieDetailsModal({
   onAddMovie,
   existingMovies,
   currentUser,
-  darkMode
+  darkMode,
+  // Per-user status props
+  myStatus,
+  allStatuses = [],
+  onToggleMyWatched,
+  onRateMe,
+  users = [],
+  averageRating,
+  ratingCount = 0,
+  watchedCount = 0
 }) {
   const { addToast } = useToast()
   const [similarMovies, setSimilarMovies] = useState([])
@@ -142,45 +151,97 @@ export default function MovieDetailsModal({
           </div>
 
           {/* Ratings */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="space-y-3">
+            {/* My Rating (interactive if onRateMe is provided) */}
             <div className="flex items-center gap-2">
-              <span className={textMuted}>Your Rating:</span>
+              <span className={textMuted}>My Rating:</span>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map(s => (
-                  <span
+                  <button
                     key={s}
-                    className={`text-lg ${s <= movie.rating ? 'text-yellow-400' : 'text-gray-500'}`}
+                    onClick={() => onRateMe ? onRateMe(movie.id, s) : null}
+                    className={`text-lg ${s <= (myStatus?.rating || movie.rating) ? 'text-yellow-400' : 'text-gray-500'} ${onRateMe ? 'hover:text-yellow-300 cursor-pointer' : 'cursor-default'} transition-colors`}
                   >
                     ★
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
-            {movie.tmdb_rating && (
+
+            {/* Average rating from all users */}
+            {averageRating != null && ratingCount > 0 && (
               <div className="flex items-center gap-2">
-                <span className={textMuted}>TMDB:</span>
-                <span className="px-2 py-0.5 bg-yellow-600 rounded text-sm font-bold">
-                  {movie.tmdb_rating.toFixed(1)}
-                </span>
+                <span className={textMuted}>Average Rating:</span>
+                <span className="text-yellow-400 font-bold">{averageRating.toFixed(1)}★</span>
+                <span className={`text-sm ${textMuted}`}>({ratingCount} user{ratingCount > 1 ? 's' : ''})</span>
               </div>
             )}
-            {movie.imdb_rating && (
-              <div className="flex items-center gap-2">
-                <span className={textMuted}>IMDB:</span>
-                <span className="px-2 py-0.5 bg-amber-500 rounded text-sm font-bold">
-                  {movie.imdb_rating.toFixed(1)}
-                </span>
+
+            {/* All user ratings breakdown */}
+            {allStatuses.filter(s => s.rating > 0).length > 0 && (
+              <div>
+                <span className={`text-sm ${textMuted}`}>All Ratings:</span>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {allStatuses.filter(s => s.rating > 0).map(status => {
+                    const user = users?.find(u => u.auth_id === status.user_id) || status.users
+                    return (
+                      <div key={status.id} className={`flex items-center gap-1 px-2 py-1 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                        <span className="text-sm">{user?.avatar || '👤'}</span>
+                        <span className="text-xs">{user?.name || 'User'}</span>
+                        <span className="text-yellow-400 text-xs">★{status.rating}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
-            {movie.rotten_tomatoes && (
-              <div className="flex items-center gap-2">
-                <span className={textMuted}>RT:</span>
-                <span className={`px-2 py-0.5 rounded text-sm font-bold ${movie.rotten_tomatoes >= 60 ? 'bg-red-500' : 'bg-green-600'}`}>
-                  {movie.rotten_tomatoes}%
-                </span>
-              </div>
-            )}
+
+            {/* External ratings */}
+            <div className="flex flex-wrap items-center gap-4">
+              {movie.tmdb_rating && (
+                <div className="flex items-center gap-2">
+                  <span className={textMuted}>TMDB:</span>
+                  <span className="px-2 py-0.5 bg-yellow-600 rounded text-sm font-bold">
+                    {movie.tmdb_rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              {movie.imdb_rating && (
+                <div className="flex items-center gap-2">
+                  <span className={textMuted}>IMDB:</span>
+                  <span className="px-2 py-0.5 bg-amber-500 rounded text-sm font-bold">
+                    {movie.imdb_rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              {movie.rotten_tomatoes && (
+                <div className="flex items-center gap-2">
+                  <span className={textMuted}>RT:</span>
+                  <span className={`px-2 py-0.5 rounded text-sm font-bold ${movie.rotten_tomatoes >= 60 ? 'bg-red-500' : 'bg-green-600'}`}>
+                    {movie.rotten_tomatoes}%
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Watched By section */}
+          {allStatuses.filter(s => s.watched).length > 0 && (
+            <div>
+              <span className={`text-sm ${textMuted}`}>Watched by:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {allStatuses.filter(s => s.watched).map(status => {
+                  const user = users?.find(u => u.auth_id === status.user_id) || status.users
+                  return (
+                    <span key={status.id} className="px-2 py-0.5 rounded bg-green-600/30 text-green-400 text-xs flex items-center gap-1">
+                      <span>{user?.avatar || '👤'}</span>
+                      <span>{user?.name || 'User'}</span>
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Cast */}
           {movie.cast?.length > 0 && (
@@ -244,14 +305,17 @@ export default function MovieDetailsModal({
               {movie.favorite ? '♥ Favorited' : '♡ Add to Favorites'}
             </button>
             <button
-              onClick={() => onToggleWatched(movie.id)}
+              onClick={() => onToggleMyWatched ? onToggleMyWatched(movie.id) : onToggleWatched(movie.id)}
               className={`flex-1 px-4 py-2 rounded ${
-                movie.watched
-                  ? 'bg-green-600 hover:bg-green-700'
-                  : 'bg-gray-600 hover:bg-gray-500'
+                onToggleMyWatched
+                  ? (myStatus?.watched ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500')
+                  : (movie.watched ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500')
               }`}
             >
-              {movie.watched ? '✓ Watched' : 'Mark Watched'}
+              {onToggleMyWatched
+                ? (myStatus?.watched ? '✓ Watched' : 'Mark Watched')
+                : (movie.watched ? '✓ Watched' : 'Mark Watched')
+              }
             </button>
           </div>
 

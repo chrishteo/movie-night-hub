@@ -12,6 +12,8 @@ export default function BottomNav({
   onShowCollections,
   onToggleBulkSelect,
   bulkSelectMode,
+  onShowInvites,
+  invitePendingCount = 0,
   darkMode
 }) {
   const bg = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
@@ -50,6 +52,18 @@ export default function BottomNav({
         >
           <span className="text-xl">🎡</span>
           <span className="text-xs mt-0.5">Spin</span>
+        </button>
+        <button
+          onClick={onShowInvites}
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-emerald-500 active:bg-emerald-500/20 transition-colors relative"
+        >
+          <span className="text-xl">📩</span>
+          <span className="text-xs mt-0.5">Invites</span>
+          {invitePendingCount > 0 && (
+            <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1">
+              {invitePendingCount > 9 ? '9+' : invitePendingCount}
+            </span>
+          )}
         </button>
         <button
           onClick={onVote}

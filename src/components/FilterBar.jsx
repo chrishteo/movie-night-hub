@@ -77,8 +77,10 @@ export default function FilterBar({
         className={`px-2 py-1 rounded text-sm ${card} ${border} border`}
       >
         <option value="all">All</option>
-        <option value="watched">Watched</option>
-        <option value="unwatched">Unwatched</option>
+        <option value="watched">Watched (global)</option>
+        <option value="unwatched">Unwatched (global)</option>
+        <option value="watchedByMe">Watched by me</option>
+        <option value="unwatchedByMe">Not watched by me</option>
       </select>
 
       <button

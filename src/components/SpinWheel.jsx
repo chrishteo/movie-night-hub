@@ -1,13 +1,17 @@
 import { useState, useCallback, useEffect } from 'react'
-import { getAllMovies } from '../lib/database'
+import { getAllMovies, setUserMovieStatus, sendWatchInvites } from '../lib/database'
 import ParticipantSelector from './ParticipantSelector'
+import { Avatar } from './AvatarPicker'
+import { useToast } from './Toast'
 
 export default function SpinWheel({
   users = [],
   onClose,
   onMoviePicked,
-  darkMode
+  darkMode,
+  authUserId = null
 }) {
+  const { addToast } = useToast()
   const [spinning, setSpinning] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [selectedUsers, setSelectedUsers] = useState(() =>
@@ -16,6 +20,11 @@ export default function SpinWheel({
   const [prioritizeShared, setPrioritizeShared] = useState(false)
   const [allMovies, setAllMovies] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Movie night log state
+  const [showLogForm, setShowLogForm] = useState(false)
+  const [logParticipants, setLogParticipants] = useState([])
+  const [loggingComplete, setLoggingComplete] = useState(false)
 
   // Fetch all movies when component mounts (needed for accurate counts across all users)
   useEffect(() => {
@@ -73,6 +82,59 @@ export default function SpinWheel({
     users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
   )
   const selectNoUsers = () => setSelectedUsers([])
+
+  // Movie night log handlers
+  const toggleLogParticipant = (authId) => {
+    setLogParticipants(prev =>
+      prev.includes(authId)
+        ? prev.filter(id => id !== authId)
+        : [...prev, authId]
+    )
+  }
+
+  const handleLogMovieNight = async () => {
+    if (!selectedMovie || logParticipants.length === 0) return
+
+    try {
+      // 1. Mark ONLY current user as watched (RLS allows this)
+      const selfIncluded = logParticipants.includes(authUserId)
+      if (selfIncluded && authUserId) {
+        await setUserMovieStatus(selectedMovie.id, authUserId, { watched: true })
+      }
+
+      // 2. Send invites to OTHER participants (not myself)
+      const otherParticipants = logParticipants.filter(id => id !== authUserId)
+      if (otherParticipants.length > 0 && authUserId) {
+        await sendWatchInvites(selectedMovie.id, authUserId, otherParticipants)
+      }
+
+      setLoggingComplete(true)
+
+      // Show appropriate message
+      const selfMarked = selfIncluded ? 1 : 0
+      const invitesSent = otherParticipants.length
+
+      if (selfMarked && invitesSent) {
+        addToast(`Marked as watched! ${invitesSent} invite(s) sent.`, 'success')
+      } else if (selfMarked) {
+        addToast('Marked as watched!', 'success')
+      } else if (invitesSent) {
+        addToast(`${invitesSent} invite(s) sent!`, 'success')
+      }
+    } catch (err) {
+      console.error('Error logging movie night:', err)
+      addToast('Failed to log movie night', 'error')
+    }
+  }
+
+  const handleStartLog = () => {
+    // Pre-select participants based on who was selected for the spin
+    const preSelectedAuthIds = users
+      .filter(u => selectedUsers.includes(u.name) && u.auth_id && !u.is_admin)
+      .map(u => u.auth_id)
+    setLogParticipants(preSelectedAuthIds)
+    setShowLogForm(true)
+  }
 
   const spin = useCallback(() => {
     if (unwatched.length === 0) return
@@ -222,13 +284,73 @@ export default function SpinWheel({
 
           {/* Winner display */}
           {selectedMovie && !spinning && (
-            <div className="mb-6 p-4 rounded-lg bg-green-500/20 border border-green-500/30">
-              <p className="text-green-400 font-bold text-xl">
-                🎉 {selectedMovie.title}!
-              </p>
-              <p className="text-sm text-gray-300 mt-1">
-                Added by <span className="font-medium text-purple-400">{selectedMovie.added_by || 'Unknown'}</span>
-              </p>
+            <div className="mb-6">
+              <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/30">
+                <p className="text-green-400 font-bold text-xl">
+                  🎉 {selectedMovie.title}!
+                </p>
+                <p className="text-sm text-gray-300 mt-1">
+                  Added by <span className="font-medium text-purple-400">{selectedMovie.added_by || 'Unknown'}</span>
+                </p>
+              </div>
+
+              {/* Log Movie Night section */}
+              {!showLogForm && !loggingComplete && (
+                <button
+                  onClick={handleStartLog}
+                  className="w-full mt-3 px-4 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium flex items-center justify-center gap-2"
+                >
+                  <span>📝</span> Log Movie Night
+                </button>
+              )}
+
+              {/* Participant selection form */}
+              {showLogForm && !loggingComplete && (
+                <div className={`mt-3 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <p className="font-medium mb-3">Who watched the movie?</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {users.filter(u => u.auth_id && !u.is_admin).map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => toggleLogParticipant(user.auth_id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                          logParticipants.includes(user.auth_id)
+                            ? 'bg-green-600 text-white'
+                            : `${darkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-200 hover:bg-gray-300'}`
+                        }`}
+                      >
+                        <Avatar avatar={user.avatar} size="xs" />
+                        <span>{user.name}</span>
+                        {logParticipants.includes(user.auth_id) && <span>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowLogForm(false); setLogParticipants([]); }}
+                      className="flex-1 px-3 py-2 rounded bg-gray-600 hover:bg-gray-500 text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleLogMovieNight}
+                      disabled={logParticipants.length === 0}
+                      className="flex-1 px-3 py-2 rounded bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50"
+                    >
+                      Confirm ({logParticipants.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Success message */}
+              {loggingComplete && (
+                <div className="mt-3 p-4 rounded-lg bg-green-600/20 border border-green-500/30 text-center">
+                  <p className="text-green-400 font-medium">
+                    ✓ Movie night logged! All participants marked as watched.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

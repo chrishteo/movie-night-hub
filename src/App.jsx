@@ -3,6 +3,8 @@ import { Analytics } from '@vercel/analytics/react'
 import { useMovies } from './hooks/useMovies'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
+import { useUserMovieStatus } from './hooks/useUserMovieStatus'
+import { useInvites } from './hooks/useInvites'
 import { useAuth } from './hooks/useAuth.jsx'
 import { useAdmin } from './hooks/useAdmin'
 import { useTutorial } from './hooks/useTutorial'
@@ -38,6 +40,7 @@ import MyBugReports from './components/MyBugReports'
 import AnnouncementBanner from './components/AnnouncementBanner'
 import GuidedTour from './components/GuidedTour'
 import WhatsNewModal from './components/WhatsNewModal'
+import InvitesModal from './components/InvitesModal'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -105,6 +108,25 @@ export default function App() {
     removeVote
   } = useVotes(authUserId)
 
+  // Per-user movie status (watched/rating)
+  const {
+    myStatuses,
+    toggleMyWatched,
+    setMyRating,
+    getMyStatus,
+    getMovieStatuses,
+    getAverageRating,
+    getRatingCount,
+    getWatchedCount
+  } = useUserMovieStatus(authUserId)
+
+  const {
+    invites,
+    pendingCount: invitePendingCount,
+    acceptInvite,
+    declineInvite
+  } = useInvites(authUserId)
+
   const {
     isAdmin,
     announcements,
@@ -156,6 +178,7 @@ export default function App() {
   const [showTrending, setShowTrending] = useState(false)
   const [showCollections, setShowCollections] = useState(false)
   const [showScheduler, setShowScheduler] = useState(false)
+  const [showInvites, setShowInvites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
   const [duplicateConfirm, setDuplicateConfirm] = useState({ isOpen: false, movieData: null, existingMovie: null })
@@ -186,6 +209,19 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('movienight-viewmode', viewMode)
   }, [viewMode])
+
+  // Auto-show invites modal if there are pending invites (once per day)
+  useEffect(() => {
+    if (!isAuthenticated || invitePendingCount === 0) return
+
+    const today = new Date().toDateString()
+    const lastShown = localStorage.getItem('movienight-invites-shown')
+
+    if (lastShown !== today) {
+      setShowInvites(true)
+      localStorage.setItem('movienight-invites-shown', today)
+    }
+  }, [isAuthenticated, invitePendingCount])
 
   // Keep selectedMovie in sync with movies array
   useEffect(() => {
@@ -259,7 +295,7 @@ export default function App() {
 
   // Filter and sort movies
   const filteredMovies = sortMovies(
-    filterMovies(movies, filters, currentUser),
+    filterMovies(movies, filters, currentUser, myStatuses),
     filters.sortBy
   )
 
@@ -684,6 +720,17 @@ export default function App() {
         >
           📅
         </button>
+        <button
+          onClick={() => setShowInvites(true)}
+          className="px-3 py-1.5 rounded text-sm bg-emerald-600 hover:bg-emerald-700 text-white relative"
+        >
+          📩
+          {invitePendingCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1">
+              {invitePendingCount > 9 ? '9+' : invitePendingCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Mobile Action Row */}
@@ -808,6 +855,13 @@ export default function App() {
         onToggleSelect={toggleMovieSelection}
         viewMode={viewMode}
         canModifyMovie={canModify}
+        // Per-user status props
+        myStatuses={myStatuses}
+        onToggleMyWatched={toggleMyWatched}
+        onRateMe={setMyRating}
+        getAverageRating={getAverageRating}
+        getRatingCount={getRatingCount}
+        getWatchedCount={getWatchedCount}
       />
       </div>
 
@@ -872,6 +926,15 @@ export default function App() {
           existingMovies={movies}
           currentUser={currentUser}
           darkMode={darkMode}
+          // Per-user status props
+          myStatus={getMyStatus(selectedMovie.id)}
+          allStatuses={getMovieStatuses(selectedMovie.id)}
+          onToggleMyWatched={toggleMyWatched}
+          onRateMe={setMyRating}
+          users={users}
+          averageRating={getAverageRating(selectedMovie.id)}
+          ratingCount={getRatingCount(selectedMovie.id)}
+          watchedCount={getWatchedCount(selectedMovie.id)}
         />
       )}
 
@@ -889,6 +952,7 @@ export default function App() {
           onClose={() => setShowWheel(false)}
           onMoviePicked={handleMoviePicked}
           darkMode={darkMode}
+          authUserId={authUserId}
         />
       )}
 
@@ -975,6 +1039,18 @@ export default function App() {
           onClose={() => setShowScheduler(false)}
           darkMode={darkMode}
           authUserId={authUserId}
+          users={users}
+        />
+      )}
+
+      {showInvites && (
+        <InvitesModal
+          invites={invites}
+          onAccept={acceptInvite}
+          onDecline={declineInvite}
+          onClose={() => setShowInvites(false)}
+          darkMode={darkMode}
+          users={users}
         />
       )}
 
@@ -993,6 +1069,8 @@ export default function App() {
         onShowCollections={() => setShowCollections(true)}
         onToggleBulkSelect={() => setBulkSelectMode(!bulkSelectMode)}
         bulkSelectMode={bulkSelectMode}
+        onShowInvites={() => setShowInvites(true)}
+        invitePendingCount={invitePendingCount}
         darkMode={darkMode}
       />
 

@@ -755,3 +755,190 @@ export function subscribeToChangelog(callback) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'changelog' }, callback)
     .subscribe()
 }
+
+// ============ USER MOVIE STATUS (Per-User Watched/Rating) ============
+
+export async function getUserMovieStatuses(userId) {
+  const { data, error } = await supabase
+    .from('user_movie_status')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return data
+}
+
+export async function getAllMovieStatuses() {
+  const { data, error } = await supabase
+    .from('user_movie_status')
+    .select('*')
+
+  if (error) throw error
+  return data
+}
+
+export async function setUserMovieStatus(movieId, userId, updates) {
+  const statusData = {
+    movie_id: movieId,
+    user_id: userId
+  }
+
+  // Include provided fields
+  if (updates.watched !== undefined) {
+    statusData.watched = updates.watched
+    statusData.watched_at = updates.watched ? new Date().toISOString() : null
+  }
+  if (updates.rating !== undefined) {
+    statusData.rating = updates.rating
+  }
+
+  const { data, error } = await supabase
+    .from('user_movie_status')
+    .upsert([statusData], { onConflict: 'movie_id,user_id' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserMovieStatus(movieId, userId) {
+  const { data, error } = await supabase
+    .from('user_movie_status')
+    .select('*')
+    .eq('movie_id', movieId)
+    .eq('user_id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows found
+  return data
+}
+
+export function subscribeToUserMovieStatuses(callback) {
+  return supabase
+    .channel('user-movie-status-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_movie_status' }, callback)
+    .subscribe()
+}
+
+// ============ MOVIE NIGHTS (Enhanced with Participants) ============
+
+export async function completeMovieNight(movieNightId, movieId, participantUserIds) {
+  // Update movie night as completed
+  const { data: movieNight, error: mnError } = await supabase
+    .from('movie_nights')
+    .update({
+      completed: true,
+      completed_at: new Date().toISOString(),
+      participants: participantUserIds
+    })
+    .eq('id', movieNightId)
+    .select()
+    .single()
+
+  if (mnError) throw mnError
+
+  // Auto-mark all participants as having watched the movie
+  const statusPromises = participantUserIds.map(userId =>
+    setUserMovieStatus(movieId, userId, { watched: true })
+  )
+
+  await Promise.all(statusPromises)
+
+  return movieNight
+}
+
+export async function getMovieNightHistory() {
+  const { data, error } = await supabase
+    .from('movie_nights')
+    .select('*')
+    .eq('completed', true)
+    .order('completed_at', { ascending: false })
+    .limit(50)
+
+  if (error) throw error
+  return data
+}
+
+// ============ WATCH INVITES ============
+
+export async function getMyInvites(userId) {
+  // Get invites where I am the invitee (to show in my inbox)
+  const { data, error } = await supabase
+    .from('watch_invites')
+    .select(`
+      *,
+      movies:movie_id (id, title, poster, year, director)
+    `)
+    .eq('invitee_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function getPendingInviteCount(userId) {
+  const { count, error } = await supabase
+    .from('watch_invites')
+    .select('*', { count: 'exact', head: true })
+    .eq('invitee_id', userId)
+    .eq('status', 'pending')
+
+  if (error) throw error
+  return count || 0
+}
+
+export async function sendWatchInvites(movieId, inviterId, inviteeIds) {
+  // Send invites to multiple users at once
+  const invites = inviteeIds.map(inviteeId => ({
+    movie_id: movieId,
+    inviter_id: inviterId,
+    invitee_id: inviteeId,
+    status: 'pending'
+  }))
+
+  const { data, error } = await supabase
+    .from('watch_invites')
+    .upsert(invites, { onConflict: 'movie_id,invitee_id' })
+    .select()
+
+  if (error) throw error
+  return data
+}
+
+export async function respondToInvite(inviteId, response) {
+  // response should be 'accepted' or 'declined'
+  const { data, error } = await supabase
+    .from('watch_invites')
+    .update({
+      status: response,
+      responded_at: new Date().toISOString()
+    })
+    .eq('id', inviteId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function cancelInvite(inviteId) {
+  const { error } = await supabase
+    .from('watch_invites')
+    .delete()
+    .eq('id', inviteId)
+
+  if (error) throw error
+}
+
+export function subscribeToWatchInvites(userId, callback) {
+  return supabase
+    .channel(`watch-invites-${userId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'watch_invites',
+      filter: `invitee_id=eq.${userId}`
+    }, callback)
+    .subscribe()
+}

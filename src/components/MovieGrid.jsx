@@ -187,7 +187,14 @@ export default function MovieGrid({
   selectedMovies,
   onToggleSelect,
   viewMode = 'grid',
-  canModifyMovie = () => true // Default to allowing modifications
+  canModifyMovie = () => true, // Default to allowing modifications
+  // Per-user status props
+  myStatuses = {},
+  onToggleMyWatched,
+  onRateMe,
+  getAverageRating,
+  getRatingCount,
+  getWatchedCount
 }) {
   // Show skeleton loaders while loading
   if (loading) {
@@ -257,6 +264,13 @@ export default function MovieGrid({
           isSelected={selectedMovies?.has(movie.id)}
           onToggleSelect={onToggleSelect}
           canModify={canModifyMovie(movie)}
+          // Per-user status props
+          myStatus={myStatuses[movie.id]}
+          averageRating={getAverageRating ? getAverageRating(movie.id) : null}
+          ratingCount={getRatingCount ? getRatingCount(movie.id) : 0}
+          watchedCount={getWatchedCount ? getWatchedCount(movie.id) : 0}
+          onToggleMyWatched={onToggleMyWatched}
+          onRateMe={onRateMe}
         />
       ))}
     </div>
