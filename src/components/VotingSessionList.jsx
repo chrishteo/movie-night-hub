@@ -4,13 +4,16 @@ import ParticipantSelector from './ParticipantSelector'
 
 export default function VotingSessionList({
   sessions,
+  allSessions = [],
   myInvites,
   users,
   currentUser,
   authUserId,
+  isAdmin = false,
   onCreateSession,
   onOpenSession,
   onRespondToInvite,
+  onDeleteSession,
   onClose,
   darkMode
 }) {
@@ -18,6 +21,7 @@ export default function VotingSessionList({
   const [sessionName, setSessionName] = useState('')
   const [selectedParticipants, setSelectedParticipants] = useState([])
   const [creating, setCreating] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const cardInner = darkMode ? 'bg-gray-700' : 'bg-gray-100'
@@ -84,15 +88,16 @@ export default function VotingSessionList({
 
         {/* Pending Invites */}
         {pendingInvites.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-yellow-400 mb-2">
-              📬 Pending Invites ({pendingInvites.length})
+          <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border-2 border-yellow-500/50 animate-pulse">
+            <h3 className="text-sm font-bold text-yellow-400 mb-3 flex items-center gap-2">
+              <span className="text-lg">📬</span>
+              You have {pendingInvites.length} pending invite{pendingInvites.length > 1 ? 's' : ''}!
             </h3>
             <div className="space-y-2">
               {pendingInvites.map(invite => (
                 <div
                   key={invite.id}
-                  className={`${cardInner} rounded-lg p-3 border ${border}`}
+                  className={`${cardInner} rounded-lg p-3 border-2 border-yellow-500/30`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -135,6 +140,8 @@ export default function VotingSessionList({
               {sessions.map(session => {
                 const isCreator = session.created_by === authUserId
                 const isParticipant = mySessions.some(s => s.id === session.id)
+                // Look up creator from users array
+                const creator = users.find(u => u.auth_id === session.created_by)
 
                 return (
                   <div
@@ -143,13 +150,13 @@ export default function VotingSessionList({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {session.creator && (
-                          <Avatar avatar={session.creator.avatar} size="sm" />
+                        {creator && (
+                          <Avatar avatar={creator.avatar} size="sm" />
                         )}
                         <div>
                           <p className="font-medium">{session.name}</p>
                           <p className="text-xs text-gray-400">
-                            by {session.creator?.name || 'Unknown'}
+                            by {creator?.name || 'Unknown'}
                             {isCreator && <span className="text-purple-400 ml-1">(you)</span>}
                           </p>
                         </div>
@@ -243,6 +250,91 @@ export default function VotingSessionList({
                 {creating ? 'Creating...' : 'Create Session'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Admin Panel */}
+        {isAdmin && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowAdminPanel(!showAdminPanel)}
+              className="w-full px-4 py-2 rounded bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm flex items-center justify-center gap-2"
+            >
+              <span>🛡️</span>
+              <span>Admin: {showAdminPanel ? 'Hide' : 'Show'} All Sessions</span>
+              <span>{showAdminPanel ? '▼' : '▶'}</span>
+            </button>
+
+            {showAdminPanel && (
+              <div className={`mt-3 ${cardInner} rounded-lg p-3 border ${border}`}>
+                <h3 className="text-sm font-bold text-red-400 mb-3">
+                  All Sessions ({allSessions.length})
+                </h3>
+
+                {allSessions.length === 0 ? (
+                  <p className="text-center py-4 opacity-50 text-sm">No sessions found</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {allSessions.map(session => {
+                      const creator = users.find(u => u.auth_id === session.created_by)
+                      const createdAt = new Date(session.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                      const statusColors = {
+                        active: 'bg-green-500/20 text-green-400',
+                        completed: 'bg-blue-500/20 text-blue-400',
+                        cancelled: 'bg-gray-500/20 text-gray-400'
+                      }
+
+                      return (
+                        <div
+                          key={session.id}
+                          className={`p-2 rounded border ${border} text-sm`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate">{session.name}</p>
+                                <span className={`px-1.5 py-0.5 rounded text-xs ${statusColors[session.status]}`}>
+                                  {session.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">
+                                by {creator?.name || 'Unknown'} • {createdAt}
+                              </p>
+                              {session.ended_at && (
+                                <p className="text-xs text-gray-500">
+                                  Ended: {new Date(session.ended_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Delete session "${session.name}"? This cannot be undone.`)) {
+                                  await onDeleteSession(session.id)
+                                }
+                              }}
+                              className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs shrink-0"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

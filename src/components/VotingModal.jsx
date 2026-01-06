@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { getAllMovies } from '../lib/database'
-import { getVoteTally, getUserVote, findWinner } from '../utils/helpers'
+import { getVoteTally, getUserVote } from '../utils/helpers'
 import { useVotingSession } from '../hooks/useVotingSessions'
 import { Avatar } from './AvatarPicker'
 
@@ -11,6 +11,7 @@ export default function VotingModal({
   authUserId,
   onEndSession,
   onCancelSession,
+  onLeaveSession,
   onRemoveParticipant,
   onAddParticipants,
   onClose,
@@ -31,6 +32,14 @@ export default function VotingModal({
   const [loading, setLoading] = useState(true)
   const [showParticipants, setShowParticipants] = useState(false)
   const [showAddParticipant, setShowAddParticipant] = useState(false)
+
+  // Voting phase: 'voting' | 'runoff' | 'complete'
+  const [votingPhase, setVotingPhase] = useState('voting')
+  const [runoffMovies, setRunoffMovies] = useState([]) // Movies in runoff (tied)
+  const [runoffRound, setRunoffRound] = useState(0) // Track runoff rounds
+  const [runoffVoteCount, setRunoffVoteCount] = useState(0) // Track votes cast in current runoff
+  const [winnerMovie, setWinnerMovie] = useState(null) // The winning movie
+  const [wasRandomWinner, setWasRandomWinner] = useState(false) // Whether winner was random
 
   // Fetch all movies when component mounts
   useEffect(() => {
@@ -71,20 +80,147 @@ export default function VotingModal({
 
   const unwatched = participantMovies.filter(m => !m.watched)
 
-  const handleDeclareWinner = async () => {
-    const winner = findWinner(participantMovies, votes, users)
-    if (winner && session) {
-      await onEndSession(session.id, winner.id)
-      // Show winner details
-      if (onViewDetails) {
-        onViewDetails(winner)
+  // Movies to show based on voting phase
+  const moviesToVote = votingPhase === 'runoff' ? runoffMovies : unwatched
+
+  // Calculate voting progress for accepted participants only
+  const votingProgress = useMemo(() => {
+    if (acceptedUserNames.length === 0 || moviesToVote.length === 0) {
+      return { complete: false, voted: 0, total: 0, byUser: {} }
+    }
+
+    const byUser = {}
+    let totalVotes = 0
+    const totalNeeded = acceptedUserNames.length * moviesToVote.length
+
+    acceptedUserNames.forEach(userName => {
+      const userVotes = moviesToVote.filter(movie =>
+        votes.some(v => v.movie_id === movie.id && v.user_name === userName)
+      ).length
+      byUser[userName] = { voted: userVotes, total: moviesToVote.length }
+      totalVotes += userVotes
+    })
+
+    return {
+      complete: totalVotes >= totalNeeded,
+      voted: totalVotes,
+      total: totalNeeded,
+      byUser
+    }
+  }, [acceptedUserNames, moviesToVote, votes])
+
+  // Find winners (movies with highest score) - returns array for tie detection
+  const findWinners = useCallback((movieList = moviesToVote) => {
+    if (movieList.length === 0) return []
+
+    const scores = movieList.map(movie => {
+      const tally = getVoteTally(votes, movie.id, users)
+      return { movie, score: tally.yes - tally.no, yes: tally.yes, no: tally.no }
+    })
+
+    const maxScore = Math.max(...scores.map(s => s.score))
+    return scores.filter(s => s.score === maxScore)
+  }, [moviesToVote, votes, users])
+
+  // Show winner celebration (doesn't end session)
+  const handleAutoWinner = useCallback((movie, wasRandom = false) => {
+    setWinnerMovie(movie)
+    setWasRandomWinner(wasRandom)
+    setVotingPhase('complete')
+  }, [])
+
+  // Start a runoff with tied movies - clear their votes first
+  const startRunoff = useCallback(async (tiedMovies) => {
+    // Clear votes for tied movies so participants can revote
+    for (const { movie } of tiedMovies) {
+      for (const userName of acceptedUserNames) {
+        try {
+          await removeVote(movie.id, userName)
+        } catch (e) {
+          // Vote might not exist, that's ok
+        }
       }
+    }
+
+    setRunoffMovies(tiedMovies.map(w => w.movie))
+    setVotingPhase('runoff')
+    setRunoffRound(prev => prev + 1)
+    setRunoffVoteCount(0)
+  }, [acceptedUserNames, removeVote])
+
+  // Auto-check for winner when all votes are cast
+  useEffect(() => {
+    // Don't check if already complete or not enough participants
+    if (votingPhase === 'complete') return
+    if (acceptedParticipants.length < 2) return
+    if (!votingProgress.complete) return
+
+    const winners = findWinners()
+
+    if (winners.length === 0) return
+
+    if (winners.length === 1) {
+      // Clear winner - auto-declare
+      handleAutoWinner(winners[0].movie)
+    } else if (winners.length > 1) {
+      if (votingPhase === 'runoff') {
+        // Already in runoff and still tied - pick random
+        const randomWinner = winners[Math.floor(Math.random() * winners.length)]
+        handleAutoWinner(randomWinner.movie, true)
+      } else {
+        // Start runoff with tied movies
+        startRunoff(winners)
+      }
+    }
+  }, [votingProgress.complete, votingPhase, acceptedParticipants.length, findWinners, startRunoff, handleAutoWinner])
+
+  const handleViewWinnerDetails = () => {
+    if (winnerMovie && onViewDetails) {
+      onViewDetails(winnerMovie)
+    }
+  }
+
+  // Finalize and end the session (called when user confirms)
+  const handleFinalizeWinner = async () => {
+    if (session && winnerMovie) {
+      try {
+        await onEndSession(session.id, winnerMovie.id)
+        onClose()
+      } catch (err) {
+        console.error('Failed to end session:', err)
+      }
+    }
+  }
+
+  const handleDeclareWinner = async () => {
+    const winners = findWinners()
+    if (winners.length === 0) return
+
+    let winner
+    let isRandom = false
+    if (winners.length === 1) {
+      winner = winners[0].movie
+    } else {
+      // Multiple winners (tie) - pick random
+      winner = winners[Math.floor(Math.random() * winners.length)].movie
+      isRandom = true
+    }
+
+    if (winner && session) {
+      await handleAutoWinner(winner, isRandom)
     }
   }
 
   const handleCancelSession = async () => {
     if (session && confirm('Are you sure you want to cancel this voting session?')) {
       await onCancelSession(session.id)
+      onClose()
+    }
+  }
+
+  const handleLeaveSession = async () => {
+    if (session && confirm('Are you sure you want to leave this voting session?')) {
+      const wasClosed = await onLeaveSession(session.id)
       onClose()
     }
   }
@@ -140,7 +276,68 @@ export default function VotingModal({
           </button>
         </div>
 
-        {isLoading ? (
+        {/* Winner Celebration Screen */}
+        {winnerMovie ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4">
+            <div className="text-6xl mb-4 animate-bounce">🏆</div>
+            <h3 className="text-2xl font-bold mb-2 text-center">
+              {wasRandomWinner ? 'Random Winner!' : 'We Have a Winner!'}
+            </h3>
+            {winnerMovie.poster && (
+              <img
+                src={winnerMovie.poster}
+                alt={winnerMovie.title}
+                className="w-32 h-48 object-cover rounded-lg shadow-lg mb-4"
+              />
+            )}
+            <p className="text-xl font-bold text-purple-400 mb-1 text-center">{winnerMovie.title}</p>
+            {winnerMovie.year && (
+              <p className="text-gray-400 mb-4">({winnerMovie.year})</p>
+            )}
+            {wasRandomWinner && (
+              <p className="text-sm text-yellow-400 mb-4 text-center">
+                It was a tie! Winner selected randomly.
+              </p>
+            )}
+            <div className="flex flex-col gap-2 mt-4 w-full max-w-xs">
+              <button
+                onClick={handleViewWinnerDetails}
+                className="w-full px-6 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium"
+              >
+                View Movie Details
+              </button>
+              {isCreator && (
+                <button
+                  onClick={handleFinalizeWinner}
+                  className="w-full px-6 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-medium"
+                >
+                  End Session
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  // Reset to voting view (allow re-voting or changing votes)
+                  setWinnerMovie(null)
+                  setVotingPhase('voting')
+                  setRunoffMovies([])
+                  setRunoffRound(0)
+                }}
+                className="w-full px-6 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white text-sm"
+              >
+                Continue Voting
+              </button>
+              {/* Leave button for non-creator participants */}
+              {!isCreator && hasAccepted && (
+                <button
+                  onClick={handleLeaveSession}
+                  className="w-full px-4 py-2 rounded bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 text-sm"
+                >
+                  Leave Session
+                </button>
+              )}
+            </div>
+          </div>
+        ) : isLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
             <p className="text-gray-400">Loading...</p>
@@ -229,19 +426,59 @@ export default function VotingModal({
               )}
             </div>
 
+            {/* Voting Progress */}
+            {hasAccepted && acceptedParticipants.length >= 2 && (
+              <div className={`${cardInner} rounded-lg p-3 mb-4 border ${border}`}>
+                {votingPhase === 'runoff' && (
+                  <div className="text-center mb-2">
+                    <span className="text-yellow-400 font-bold text-sm">⚔️ TIEBREAKER ROUND</span>
+                    <p className="text-xs text-gray-400">Vote again on the tied movies</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-400">Voting Progress</span>
+                  <span className={votingProgress.complete ? 'text-green-400' : 'text-gray-400'}>
+                    {votingProgress.voted}/{votingProgress.total} votes
+                  </span>
+                </div>
+                <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${votingProgress.complete ? 'bg-green-500' : 'bg-purple-500'}`}
+                    style={{ width: `${votingProgress.total > 0 ? (votingProgress.voted / votingProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {acceptedUserNames.map(userName => {
+                    const progress = votingProgress.byUser[userName]
+                    const done = progress?.voted === progress?.total
+                    return (
+                      <span
+                        key={userName}
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          done ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'
+                        }`}
+                      >
+                        {userName} {done ? '✓' : `${progress?.voted || 0}/${progress?.total || 0}`}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Voting instructions */}
-            {hasAccepted && (
-              <p className="text-xs text-gray-400 mb-3 text-center">
-                Voting on movies from: {acceptedUserNames.join(', ') || 'no one yet'}
+            {hasAccepted && acceptedParticipants.length < 2 && (
+              <p className="text-xs text-yellow-400 mb-3 text-center">
+                Waiting for at least 2 participants to start voting
               </p>
             )}
 
             {/* Movie list */}
-            {unwatched.length === 0 ? (
-              <p className="text-center py-8 opacity-50">No unwatched movies to vote on</p>
+            {moviesToVote.length === 0 ? (
+              <p className="text-center py-8 opacity-50">No movies to vote on</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {unwatched.map(movie => {
+                {moviesToVote.map(movie => {
                   const tally = getVoteTally(votes, movie.id, users)
                   const myVote = getUserVote(votes, movie.id, currentUser)
 
@@ -327,13 +564,24 @@ export default function VotingModal({
 
             {/* Action buttons */}
             <div className="mt-4 space-y-2">
-              <button
-                onClick={handleDeclareWinner}
-                disabled={unwatched.length === 0 || (!hasAccepted && !isCreator)}
-                className="w-full px-4 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white disabled:opacity-50"
-              >
-                🏆 Declare Winner
-              </button>
+              {/* Show status or manual declare button */}
+              {votingPhase === 'complete' ? (
+                <div className="w-full px-4 py-2 rounded bg-green-600/20 text-green-400 text-center">
+                  ✓ Winner has been declared!
+                </div>
+              ) : votingProgress.complete ? (
+                <div className="w-full px-4 py-2 rounded bg-purple-600/20 text-purple-400 text-center animate-pulse">
+                  🎯 Calculating winner...
+                </div>
+              ) : (
+                <button
+                  onClick={handleDeclareWinner}
+                  disabled={moviesToVote.length === 0 || (!hasAccepted && !isCreator)}
+                  className="w-full px-4 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white disabled:opacity-50"
+                >
+                  🏆 {votingPhase === 'runoff' ? 'Pick Random Winner' : 'Declare Winner Early'}
+                </button>
+              )}
 
               {isCreator && (
                 <button
@@ -341,6 +589,16 @@ export default function VotingModal({
                   className="w-full px-4 py-2 rounded bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm"
                 >
                   Cancel Session
+                </button>
+              )}
+
+              {/* Leave button for non-creator accepted participants */}
+              {!isCreator && hasAccepted && (
+                <button
+                  onClick={handleLeaveSession}
+                  className="w-full px-4 py-2 rounded bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 text-sm"
+                >
+                  Leave Session
                 </button>
               )}
             </div>

@@ -74,9 +74,12 @@ export default function BottomNav({
           <span className="text-xl">🗳️</span>
           <span className="text-xs mt-0.5">Vote</span>
           {sessionInviteCount > 0 && (
-            <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1">
-              {sessionInviteCount > 9 ? '9+' : sessionInviteCount}
-            </span>
+            <>
+              <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1 animate-pulse">
+                {sessionInviteCount > 9 ? '9+' : sessionInviteCount}
+              </span>
+              <span className="absolute top-1 right-2 bg-red-400 rounded-full min-w-[1.25rem] h-5 animate-ping opacity-75"></span>
+            </>
           )}
         </button>
         <button

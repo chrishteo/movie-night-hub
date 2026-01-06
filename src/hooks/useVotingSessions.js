@@ -6,6 +6,7 @@ import {
   updateVotingSession,
   endVotingSession,
   cancelVotingSession,
+  deleteVotingSession,
   getSessionParticipants,
   addSessionParticipants,
   updateParticipantStatus,
@@ -15,6 +16,8 @@ import {
   castSessionVote,
   removeSessionVote,
   clearSessionVotes,
+  leaveVotingSession,
+  checkAndAutoCloseSession,
   subscribeToVotingSessions,
   subscribeToSessionParticipants,
   subscribeToSessionVotes
@@ -22,6 +25,7 @@ import {
 
 export function useVotingSessions(authUserId = null) {
   const [sessions, setSessions] = useState([])
+  const [allSessions, setAllSessions] = useState([]) // For admin - includes all statuses
   const [myInvites, setMyInvites] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -52,20 +56,36 @@ export function useVotingSessions(authUserId = null) {
     }
   }, [authUserId])
 
+  // Fetch all sessions (for admin)
+  const fetchAllSessions = useCallback(async () => {
+    try {
+      const data = await getVotingSessions(false) // all sessions
+      setAllSessions(data)
+    } catch (err) {
+      console.error('Error fetching all sessions:', err)
+    }
+  }, [])
+
   useEffect(() => {
     fetchSessions()
     fetchMyInvites()
+    fetchAllSessions() // Always fetch all sessions for potential admin use
 
     // Subscribe to session changes
     const sessionSub = subscribeToVotingSessions((payload) => {
       if (payload.eventType === 'INSERT' && payload.new) {
         setSessions(prev => [payload.new, ...prev])
+        setAllSessions(prev => [payload.new, ...prev])
       } else if (payload.eventType === 'UPDATE' && payload.new) {
         setSessions(prev => prev.map(s =>
           s.id === payload.new.id ? { ...s, ...payload.new } : s
         ).filter(s => s.status === 'active'))
+        setAllSessions(prev => prev.map(s =>
+          s.id === payload.new.id ? { ...s, ...payload.new } : s
+        ))
       } else if (payload.eventType === 'DELETE' && payload.old?.id) {
         setSessions(prev => prev.filter(s => s.id !== payload.old.id))
+        setAllSessions(prev => prev.filter(s => s.id !== payload.old.id))
       }
       // Refetch invites when sessions change
       fetchMyInvites()
@@ -74,7 +94,7 @@ export function useVotingSessions(authUserId = null) {
     return () => {
       sessionSub.unsubscribe()
     }
-  }, [fetchSessions, fetchMyInvites])
+  }, [fetchSessions, fetchMyInvites, fetchAllSessions])
 
   // Create a new session
   const createSession = useCallback(async (name, participantUserIds = []) => {
@@ -130,22 +150,58 @@ export function useVotingSessions(authUserId = null) {
     if (!authUserId) return
     try {
       await updateParticipantStatus(sessionId, authUserId, accept ? 'accepted' : 'declined')
+
+      // If declining, check if session should auto-close
+      if (!accept) {
+        const closedSession = await checkAndAutoCloseSession(sessionId)
+        if (closedSession) {
+          await fetchSessions() // Refresh sessions list
+        }
+      }
+
       await fetchMyInvites()
     } catch (err) {
       setError(err.message)
       throw err
     }
-  }, [authUserId, fetchMyInvites])
+  }, [authUserId, fetchMyInvites, fetchSessions])
+
+  // Leave a session (for accepted participants)
+  const leaveSession = useCallback(async (sessionId) => {
+    if (!authUserId) return
+    try {
+      await leaveVotingSession(sessionId, authUserId)
+
+      // Check if session should auto-close
+      const closedSession = await checkAndAutoCloseSession(sessionId)
+
+      // Always refresh sessions after leaving
+      await fetchSessions()
+      await fetchMyInvites()
+      return closedSession // Return whether session was closed
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [authUserId, fetchMyInvites, fetchSessions])
 
   // Remove a participant (creator only)
   const removeParticipant = useCallback(async (sessionId, userId) => {
     try {
       await removeSessionParticipant(sessionId, userId)
+
+      // Check if session should auto-close
+      const closedSession = await checkAndAutoCloseSession(sessionId)
+      if (closedSession) {
+        await fetchSessions()
+      }
+
+      return closedSession
     } catch (err) {
       setError(err.message)
       throw err
     }
-  }, [])
+  }, [fetchSessions])
 
   // Add participants to existing session
   const addParticipants = useCallback(async (sessionId, userIds) => {
@@ -157,8 +213,21 @@ export function useVotingSessions(authUserId = null) {
     }
   }, [])
 
+  // Delete a session (admin only)
+  const deleteSession = useCallback(async (sessionId) => {
+    try {
+      await deleteVotingSession(sessionId)
+      await fetchSessions()
+      await fetchAllSessions()
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [fetchSessions, fetchAllSessions])
+
   return {
     sessions,
+    allSessions, // For admin - includes all statuses
     myInvites,
     loading,
     error,
@@ -166,10 +235,13 @@ export function useVotingSessions(authUserId = null) {
     endSession,
     cancelSession,
     respondToInvite,
+    leaveSession,
     removeParticipant,
     addParticipants,
+    deleteSession, // Admin only
     refetch: fetchSessions,
-    refetchInvites: fetchMyInvites
+    refetchInvites: fetchMyInvites,
+    refetchAllSessions: fetchAllSessions
   }
 }
 
@@ -224,12 +296,21 @@ export function useVotingSession(sessionId, authUserId = null) {
     const votesSub = subscribeToSessionVotes(sessionId, (payload) => {
       if (payload.eventType === 'INSERT' && payload.new) {
         setVotes(prev => [...prev.filter(v =>
-          !(v.movie_id === payload.new.movie_id && v.user_name === payload.new.user_name)
+          !(v.movie_id === payload.new.movie_id && v.user_name === payload.new.user_name && v.session_id === payload.new.session_id)
         ), payload.new])
       } else if (payload.eventType === 'UPDATE' && payload.new) {
-        setVotes(prev => prev.map(v =>
-          v.id === payload.new.id ? payload.new : v
-        ))
+        // For upserts, handle as add/replace
+        setVotes(prev => {
+          const exists = prev.some(v => v.id === payload.new.id)
+          if (exists) {
+            return prev.map(v => v.id === payload.new.id ? payload.new : v)
+          } else {
+            // New vote via upsert - add it
+            return [...prev.filter(v =>
+              !(v.movie_id === payload.new.movie_id && v.user_name === payload.new.user_name && v.session_id === payload.new.session_id)
+            ), payload.new]
+          }
+        })
       } else if (payload.eventType === 'DELETE' && payload.old?.id) {
         setVotes(prev => prev.filter(v => v.id !== payload.old.id))
       }

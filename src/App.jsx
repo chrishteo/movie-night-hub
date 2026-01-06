@@ -134,13 +134,16 @@ export default function App() {
   // Voting sessions
   const {
     sessions: votingSessions,
+    allSessions: allVotingSessions,
     myInvites: sessionInvites,
     createSession,
     endSession,
     cancelSession,
     respondToInvite: respondToSessionInvite,
+    leaveSession,
     removeParticipant,
-    addParticipants
+    addParticipants,
+    deleteSession
   } = useVotingSessions(authUserId)
 
   // Wrapper that also refetches myStatuses after accepting
@@ -247,6 +250,21 @@ export default function App() {
       localStorage.setItem('movienight-invites-shown', today)
     }
   }, [isAuthenticated, invitePendingCount])
+
+  // Auto-show voting sessions modal if there are pending session invites
+  const pendingSessionInvites = sessionInvites.filter(i => i.status === 'invited')
+  useEffect(() => {
+    if (!isAuthenticated || pendingSessionInvites.length === 0) return
+
+    const today = new Date().toDateString()
+    const lastShown = localStorage.getItem('movienight-session-invites-shown')
+
+    if (lastShown !== today) {
+      setShowVotingSessions(true)
+      localStorage.setItem('movienight-session-invites-shown', today)
+      addToast(`You have ${pendingSessionInvites.length} voting session invite(s)!`, 'info')
+    }
+  }, [isAuthenticated, pendingSessionInvites.length])
 
   // Keep selectedMovie in sync with movies array
   useEffect(() => {
@@ -696,10 +714,13 @@ export default function App() {
           data-tour="voting"
         >
           🗳️
-          {sessionInvites.filter(i => i.status === 'invited').length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              {sessionInvites.filter(i => i.status === 'invited').length}
-            </span>
+          {pendingSessionInvites.length > 0 && (
+            <>
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                {pendingSessionInvites.length}
+              </span>
+              <span className="absolute -top-1 -right-1 bg-red-400 rounded-full w-5 h-5 animate-ping opacity-75"></span>
+            </>
           )}
         </button>
         <button
@@ -990,10 +1011,12 @@ export default function App() {
       {showVotingSessions && (
         <VotingSessionList
           sessions={votingSessions}
+          allSessions={allVotingSessions}
           myInvites={sessionInvites}
           users={users}
           currentUser={currentUser}
           authUserId={authUserId}
+          isAdmin={isAdmin}
           onCreateSession={createSession}
           onOpenSession={(session) => {
             setCurrentVotingSession(session)
@@ -1001,6 +1024,7 @@ export default function App() {
             setShowVoting(true)
           }}
           onRespondToInvite={respondToSessionInvite}
+          onDeleteSession={deleteSession}
           onClose={() => setShowVotingSessions(false)}
           darkMode={darkMode}
         />
@@ -1026,6 +1050,12 @@ export default function App() {
             await cancelSession(sessionId)
             setShowVoting(false)
             setCurrentVotingSession(null)
+          }}
+          onLeaveSession={async (sessionId) => {
+            const wasClosed = await leaveSession(sessionId)
+            setShowVoting(false)
+            setCurrentVotingSession(null)
+            return wasClosed
           }}
           onRemoveParticipant={removeParticipant}
           onAddParticipants={addParticipants}

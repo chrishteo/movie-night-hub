@@ -948,10 +948,7 @@ export function subscribeToWatchInvites(userId, callback) {
 export async function getVotingSessions(activeOnly = false) {
   let query = supabase
     .from('voting_sessions')
-    .select(`
-      *,
-      creator:created_by (id, auth_id, name, avatar)
-    `)
+    .select('*')
     .order('created_at', { ascending: false })
 
   if (activeOnly) {
@@ -966,10 +963,7 @@ export async function getVotingSessions(activeOnly = false) {
 export async function getVotingSession(sessionId) {
   const { data, error } = await supabase
     .from('voting_sessions')
-    .select(`
-      *,
-      creator:created_by (id, auth_id, name, avatar)
-    `)
+    .select('*')
     .eq('id', sessionId)
     .single()
 
@@ -1045,10 +1039,7 @@ export async function deleteVotingSession(sessionId) {
 export async function getSessionParticipants(sessionId) {
   const { data, error } = await supabase
     .from('voting_session_participants')
-    .select(`
-      *,
-      user:user_id (id, auth_id, name, avatar)
-    `)
+    .select('*')
     .eq('session_id', sessionId)
 
   if (error) throw error
@@ -1105,11 +1096,99 @@ export async function getMySessionInvites(userId) {
       session:session_id (id, name, status, created_at, created_by)
     `)
     .eq('user_id', userId)
+
+  if (error) throw error
+  // Filter to only active sessions, and exclude sessions where user is the creator
+  // (creator should never see their own session as an invite)
+  return data.filter(p =>
+    p.session?.status === 'active' &&
+    p.session?.created_by !== userId
+  )
+}
+
+// Get only pending invites (for notification badge)
+export async function getMyPendingInvites(userId) {
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .select(`
+      *,
+      session:session_id (id, name, status, created_at, created_by)
+    `)
+    .eq('user_id', userId)
     .eq('status', 'invited')
 
   if (error) throw error
-  // Filter to only active sessions
-  return data.filter(p => p.session?.status === 'active')
+  // Filter to only active sessions, and exclude sessions where user is the creator
+  return data.filter(p =>
+    p.session?.status === 'active' &&
+    p.session?.created_by !== userId
+  )
+}
+
+export async function leaveVotingSession(sessionId, userId) {
+  // Update status to 'declined' (leaving = no longer participating)
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .update({
+      status: 'declined',
+      responded_at: new Date().toISOString()
+    })
+    .eq('session_id', sessionId)
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function checkAndAutoCloseSession(sessionId) {
+  // Get all participants for this session
+  const { data: participants, error: pError } = await supabase
+    .from('voting_session_participants')
+    .select('*')
+    .eq('session_id', sessionId)
+
+  if (pError) throw pError
+
+  // Get the session to find the creator
+  const { data: session, error: sError } = await supabase
+    .from('voting_sessions')
+    .select('created_by, status')
+    .eq('id', sessionId)
+    .single()
+
+  if (sError) throw sError
+
+  // If session is already closed, don't do anything
+  if (session.status !== 'active') return null
+
+  // Check if any non-creator participant is still accepted or invited
+  const hasActiveParticipants = participants.some(p =>
+    p.user_id !== session.created_by &&
+    (p.status === 'accepted' || p.status === 'invited')
+  )
+
+  // If no active participants left, auto-close the session
+  if (!hasActiveParticipants) {
+    const { data, error } = await supabase
+      .from('voting_sessions')
+      .update({
+        status: 'cancelled',
+        ended_at: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+      .select()
+      .single()
+
+    if (error) {
+      // If RLS blocks the update, that's okay - session stays open
+      return null
+    }
+    return data // Return the closed session
+  }
+
+  return null // Session stays open
 }
 
 export async function getPendingSessionInviteCount(userId) {
@@ -1143,7 +1222,7 @@ export async function castSessionVote(movieId, userName, vote, sessionId, authUs
 
   const { data, error } = await supabase
     .from('votes')
-    .upsert([voteData], { onConflict: 'movie_id,user_name' })
+    .upsert([voteData], { onConflict: 'movie_id,user_name,session_id' })
     .select()
     .single()
 
