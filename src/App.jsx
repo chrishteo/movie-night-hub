@@ -20,6 +20,8 @@ import MovieDetailsModal from './components/MovieDetailsModal'
 import AddUserModal from './components/AddUserModal'
 import SpinWheel from './components/SpinWheel'
 import VotingModal from './components/VotingModal'
+import VotingSessionList from './components/VotingSessionList'
+import { useVotingSessions } from './hooks/useVotingSessions'
 import Recommendations from './components/Recommendations'
 import WatchHistory from './components/WatchHistory'
 import MovieOfTheWeek from './components/MovieOfTheWeek'
@@ -129,6 +131,18 @@ export default function App() {
     declineInvite
   } = useInvites(authUserId)
 
+  // Voting sessions
+  const {
+    sessions: votingSessions,
+    myInvites: sessionInvites,
+    createSession,
+    endSession,
+    cancelSession,
+    respondToInvite: respondToSessionInvite,
+    removeParticipant,
+    addParticipants
+  } = useVotingSessions(authUserId)
+
   // Wrapper that also refetches myStatuses after accepting
   const handleAcceptInvite = async (invite, rating) => {
     await rawAcceptInvite(invite, rating)
@@ -179,6 +193,8 @@ export default function App() {
   const [showAddUser, setShowAddUser] = useState(false)
   const [showWheel, setShowWheel] = useState(false)
   const [showVoting, setShowVoting] = useState(false)
+  const [showVotingSessions, setShowVotingSessions] = useState(false)
+  const [currentVotingSession, setCurrentVotingSession] = useState(null)
   const [showRecs, setShowRecs] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showMOTW, setShowMOTW] = useState(false)
@@ -675,11 +691,16 @@ export default function App() {
           🎡
         </button>
         <button
-          onClick={() => setShowVoting(true)}
-          className="px-3 py-1.5 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={() => setShowVotingSessions(true)}
+          className="px-3 py-1.5 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white relative"
           data-tour="voting"
         >
           🗳️
+          {sessionInvites.filter(i => i.status === 'invited').length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+              {sessionInvites.filter(i => i.status === 'invited').length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setShowRecs(true)}
@@ -966,15 +987,53 @@ export default function App() {
         />
       )}
 
-      {showVoting && (
-        <VotingModal
-          votes={votes}
+      {showVotingSessions && (
+        <VotingSessionList
+          sessions={votingSessions}
+          myInvites={sessionInvites}
           users={users}
           currentUser={currentUser}
-          onVote={castVote}
-          onRemoveVote={removeVote}
-          onDeclareWinner={handleWinnerDeclared}
-          onClose={() => setShowVoting(false)}
+          authUserId={authUserId}
+          onCreateSession={createSession}
+          onOpenSession={(session) => {
+            setCurrentVotingSession(session)
+            setShowVotingSessions(false)
+            setShowVoting(true)
+          }}
+          onRespondToInvite={respondToSessionInvite}
+          onClose={() => setShowVotingSessions(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showVoting && currentVotingSession && (
+        <VotingModal
+          session={currentVotingSession}
+          users={users}
+          currentUser={currentUser}
+          authUserId={authUserId}
+          onEndSession={async (sessionId, winnerMovieId) => {
+            await endSession(sessionId, winnerMovieId)
+            setShowVoting(false)
+            setCurrentVotingSession(null)
+            // Show winner if there is one
+            const winnerMovie = movies.find(m => m.id === winnerMovieId)
+            if (winnerMovie) {
+              handleWinnerDeclared(winnerMovie)
+            }
+          }}
+          onCancelSession={async (sessionId) => {
+            await cancelSession(sessionId)
+            setShowVoting(false)
+            setCurrentVotingSession(null)
+          }}
+          onRemoveParticipant={removeParticipant}
+          onAddParticipants={addParticipants}
+          onClose={() => {
+            setShowVoting(false)
+            setCurrentVotingSession(null)
+          }}
+          onViewDetails={setSelectedMovie}
           darkMode={darkMode}
         />
       )}
@@ -1068,7 +1127,7 @@ export default function App() {
       <BottomNav
         onAddMovie={() => setShowAddMovie(true)}
         onSpinWheel={() => setShowWheel(true)}
-        onVote={() => setShowVoting(true)}
+        onVote={() => setShowVotingSessions(true)}
         onShowRecs={() => setShowRecs(true)}
         onShowStats={() => setShowStats(true)}
         onShowTrending={() => setShowTrending(true)}
@@ -1081,6 +1140,7 @@ export default function App() {
         bulkSelectMode={bulkSelectMode}
         onShowInvites={() => setShowInvites(true)}
         invitePendingCount={invitePendingCount}
+        sessionInviteCount={sessionInvites.filter(i => i.status === 'invited').length}
         darkMode={darkMode}
       />
 

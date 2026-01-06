@@ -942,3 +942,264 @@ export function subscribeToWatchInvites(userId, callback) {
     }, callback)
     .subscribe()
 }
+
+// ============ VOTING SESSIONS ============
+
+export async function getVotingSessions(activeOnly = false) {
+  let query = supabase
+    .from('voting_sessions')
+    .select(`
+      *,
+      creator:created_by (id, auth_id, name, avatar)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (activeOnly) {
+    query = query.eq('status', 'active')
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function getVotingSession(sessionId) {
+  const { data, error } = await supabase
+    .from('voting_sessions')
+    .select(`
+      *,
+      creator:created_by (id, auth_id, name, avatar)
+    `)
+    .eq('id', sessionId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function createVotingSession(name, createdBy) {
+  const { data, error } = await supabase
+    .from('voting_sessions')
+    .insert([{ name, created_by: createdBy }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateVotingSession(sessionId, updates) {
+  const { data, error } = await supabase
+    .from('voting_sessions')
+    .update(updates)
+    .eq('id', sessionId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function endVotingSession(sessionId, winnerMovieId = null) {
+  const { data, error } = await supabase
+    .from('voting_sessions')
+    .update({
+      status: 'completed',
+      ended_at: new Date().toISOString(),
+      winner_movie_id: winnerMovieId
+    })
+    .eq('id', sessionId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function cancelVotingSession(sessionId) {
+  const { data, error } = await supabase
+    .from('voting_sessions')
+    .update({
+      status: 'cancelled',
+      ended_at: new Date().toISOString()
+    })
+    .eq('id', sessionId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteVotingSession(sessionId) {
+  const { error } = await supabase
+    .from('voting_sessions')
+    .delete()
+    .eq('id', sessionId)
+
+  if (error) throw error
+}
+
+// ============ VOTING SESSION PARTICIPANTS ============
+
+export async function getSessionParticipants(sessionId) {
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .select(`
+      *,
+      user:user_id (id, auth_id, name, avatar)
+    `)
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+  return data
+}
+
+export async function addSessionParticipants(sessionId, userIds) {
+  const participants = userIds.map(userId => ({
+    session_id: sessionId,
+    user_id: userId,
+    status: 'invited'
+  }))
+
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .upsert(participants, { onConflict: 'session_id,user_id' })
+    .select()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateParticipantStatus(sessionId, userId, status) {
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .update({
+      status,
+      responded_at: new Date().toISOString()
+    })
+    .eq('session_id', sessionId)
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeSessionParticipant(sessionId, oderId) {
+  const { error } = await supabase
+    .from('voting_session_participants')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('user_id', oderId)
+
+  if (error) throw error
+}
+
+export async function getMySessionInvites(userId) {
+  const { data, error } = await supabase
+    .from('voting_session_participants')
+    .select(`
+      *,
+      session:session_id (id, name, status, created_at, created_by)
+    `)
+    .eq('user_id', userId)
+    .eq('status', 'invited')
+
+  if (error) throw error
+  // Filter to only active sessions
+  return data.filter(p => p.session?.status === 'active')
+}
+
+export async function getPendingSessionInviteCount(userId) {
+  const invites = await getMySessionInvites(userId)
+  return invites.length
+}
+
+// ============ VOTES (Updated for Sessions) ============
+
+export async function getSessionVotes(sessionId) {
+  const { data, error } = await supabase
+    .from('votes')
+    .select('*')
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+  return data
+}
+
+export async function castSessionVote(movieId, userName, vote, sessionId, authUserId = null) {
+  const voteData = {
+    movie_id: movieId,
+    user_name: userName,
+    vote,
+    session_id: sessionId
+  }
+
+  if (authUserId) {
+    voteData.user_id = authUserId
+  }
+
+  const { data, error } = await supabase
+    .from('votes')
+    .upsert([voteData], { onConflict: 'movie_id,user_name' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeSessionVote(movieId, userName, sessionId) {
+  const { error } = await supabase
+    .from('votes')
+    .delete()
+    .eq('movie_id', movieId)
+    .eq('user_name', userName)
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+}
+
+export async function clearSessionVotes(sessionId) {
+  const { error } = await supabase
+    .from('votes')
+    .delete()
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+}
+
+// ============ VOTING SESSIONS SUBSCRIPTIONS ============
+
+export function subscribeToVotingSessions(callback) {
+  return supabase
+    .channel('voting-sessions-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'voting_sessions' }, callback)
+    .subscribe()
+}
+
+export function subscribeToSessionParticipants(sessionId, callback) {
+  return supabase
+    .channel(`session-participants-${sessionId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'voting_session_participants',
+      filter: `session_id=eq.${sessionId}`
+    }, callback)
+    .subscribe()
+}
+
+export function subscribeToSessionVotes(sessionId, callback) {
+  return supabase
+    .channel(`session-votes-${sessionId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'votes',
+      filter: `session_id=eq.${sessionId}`
+    }, callback)
+    .subscribe()
+}

@@ -14,6 +14,7 @@ export default function BottomNav({
   bulkSelectMode,
   onShowInvites,
   invitePendingCount = 0,
+  sessionInviteCount = 0,
   darkMode
 }) {
   const bg = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
@@ -67,11 +68,16 @@ export default function BottomNav({
         </button>
         <button
           onClick={onVote}
-          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-blue-500 active:bg-blue-500/20 transition-colors"
+          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-blue-500 active:bg-blue-500/20 transition-colors relative"
           data-tour="voting-mobile"
         >
           <span className="text-xl">🗳️</span>
           <span className="text-xs mt-0.5">Vote</span>
+          {sessionInviteCount > 0 && (
+            <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1">
+              {sessionInviteCount > 9 ? '9+' : sessionInviteCount}
+            </span>
+          )}
         </button>
         <button
           onClick={onShowMOTW}

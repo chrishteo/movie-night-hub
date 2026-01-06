@@ -334,6 +334,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE watch_invites;
 
 ---
 
+## Voting Sessions Setup
+
+To enable the voting sessions feature (multiple concurrent voting sessions):
+
+### 1. Run Voting Sessions Migration
+
+In Supabase SQL Editor, run `supabase/migrations/voting_sessions.sql` to create:
+- `voting_sessions` table for session management
+- `voting_session_participants` table for tracking participants
+- Adds `session_id` column to existing `votes` table
+- RLS policies for session access and management
+
+### 2. How Voting Sessions Work
+
+- **Multiple Sessions**: Different groups can run separate voting sessions simultaneously (e.g., "Chris's house" vs "John's place")
+- **Session Creator**: Can invite/remove participants, cancel session, declare winner
+- **Participants**: Receive invite notifications, can accept/decline, then vote on movies
+- **Votes per Session**: Each session has its own votes, cleared when session ends
+
+---
+
 ## Email Notifications Setup
 
 ### 1. Create Resend Account
