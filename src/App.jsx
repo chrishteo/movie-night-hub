@@ -960,6 +960,7 @@ export default function App() {
           users={users}
           onClose={() => setShowWheel(false)}
           onMoviePicked={handleMoviePicked}
+          onViewDetails={setSelectedMovie}
           darkMode={darkMode}
           authUserId={authUserId}
         />

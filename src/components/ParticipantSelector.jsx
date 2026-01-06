@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Avatar } from './AvatarPicker'
 
 export default function ParticipantSelector({
@@ -11,12 +12,19 @@ export default function ParticipantSelector({
   showMovieCount = true,
   movies = []
 }) {
+  const [searchQuery, setSearchQuery] = useState('')
   const card = darkMode ? 'bg-gray-700' : 'bg-gray-100'
   const border = darkMode ? 'border-gray-600' : 'border-gray-300'
+  const inputBg = darkMode ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-300'
 
   // Filter out system/admin users that shouldn't participate
   const participantUsers = users.filter(u =>
     u.name.toLowerCase() !== 'admin'
+  )
+
+  // Filter by search query
+  const filteredUsers = participantUsers.filter(u =>
+    u.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // Count movies per user
@@ -55,8 +63,22 @@ export default function ParticipantSelector({
       </div>
 
       <div className={`${card} rounded-lg p-3 border ${border}`}>
-        <div className="space-y-2">
-          {participantUsers.map(user => {
+        {/* Search bar - only show if more than 4 users */}
+        {participantUsers.length > 4 && (
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+            />
+          </div>
+        )}
+
+        {/* Scrollable user list - max height for ~3.5 users */}
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {filteredUsers.map(user => {
             const isSelected = selectedUsers.includes(user.name)
             const movieCount = getMovieCount(user.name)
             const unwatchedCount = getUnwatchedCount(user.name)
@@ -86,6 +108,9 @@ export default function ParticipantSelector({
               </label>
             )
           })}
+          {filteredUsers.length === 0 && searchQuery && (
+            <p className="text-sm text-gray-400 text-center py-2">No users match "{searchQuery}"</p>
+          )}
         </div>
 
         {/* Summary */}

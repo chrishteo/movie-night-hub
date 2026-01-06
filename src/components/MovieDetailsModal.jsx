@@ -99,7 +99,7 @@ export default function MovieDetailsModal({
   const textMuted = darkMode ? 'text-gray-400' : 'text-gray-600'
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto modal-safe-area">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-auto modal-safe-area">
       <div className={`${card} rounded-lg w-full max-w-lg max-h-[90vh] overflow-auto`}>
         {/* Header with poster */}
         <div className="relative">

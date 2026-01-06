@@ -8,6 +8,7 @@ export default function SpinWheel({
   users = [],
   onClose,
   onMoviePicked,
+  onViewDetails,
   darkMode,
   authUserId = null
 }) {
@@ -285,14 +286,18 @@ export default function SpinWheel({
           {/* Winner display */}
           {selectedMovie && !spinning && (
             <div className="mb-6">
-              <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/30">
+              <button
+                onClick={() => onViewDetails?.(selectedMovie)}
+                className="w-full p-4 rounded-lg bg-green-500/20 border border-green-500/30 hover:bg-green-500/30 transition-colors cursor-pointer text-left"
+              >
                 <p className="text-green-400 font-bold text-xl">
                   🎉 {selectedMovie.title}!
                 </p>
                 <p className="text-sm text-gray-300 mt-1">
                   Added by <span className="font-medium text-purple-400">{selectedMovie.added_by || 'Unknown'}</span>
                 </p>
-              </div>
+                <p className="text-xs text-gray-400 mt-2">Click to view details</p>
+              </button>
 
               {/* Log Movie Night section */}
               {!showLogForm && !loggingComplete && (

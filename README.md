@@ -498,6 +498,14 @@ Submit a bug report in the app - you should receive an email!
 
 ---
 
+## Future Ideas / Discussion
+
+Ideas to consider for future development:
+
+- **User-fair spin algorithm**: Currently the spin wheel is "movie-fair" (each movie has equal chance). This means users who add more movies have higher odds of their movie being picked. An alternative "user-fair" mode could give each selected participant equal odds, then pick randomly from that user's movies. Example: Alice (10 movies) and Bob (2 movies) would each have 50% chance, rather than Alice having 83%.
+
+---
+
 ## License
 
 MIT
