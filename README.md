@@ -346,12 +346,26 @@ In Supabase SQL Editor, run `supabase/migrations/voting_sessions.sql` to create:
 - Adds `session_id` column to existing `votes` table
 - RLS policies for session access and management
 
-### 2. How Voting Sessions Work
+### 2. Run Additional RLS Policies
 
-- **Multiple Sessions**: Different groups can run separate voting sessions simultaneously (e.g., "Chris's house" vs "John's place")
-- **Session Creator**: Can invite/remove participants, cancel session, declare winner
+Run these migrations for proper voting permissions:
+- `supabase/migrations/votes_secure_policy.sql` - Secure voting (must vote as yourself + be participant)
+- `supabase/migrations/voting_sessions_autoclose_policy_v2.sql` - Allow participants to complete sessions
+
+### 3. How Voting Sessions Work
+
+- **Multiple Sessions**: Different groups can run separate voting sessions simultaneously
+- **Session Creator**: Can invite/remove participants, cancel session, end session
 - **Participants**: Receive invite notifications, can accept/decline, then vote on movies
-- **Votes per Session**: Each session has its own votes, cleared when session ends
+- **Leave Session**: Participants can leave anytime; session auto-closes if all leave
+- **Voting Progress**: Real-time progress bar shows who has voted
+- **Winner Declaration**: When all votes are cast, winner is automatically determined
+- **Tiebreaker System**:
+  - If movies are tied, a runoff round starts with just the tied movies
+  - All votes are cleared for the runoff
+  - If still tied after runoff, a random winner is selected
+- **Winner Celebration**: Shows winning movie with poster before session ends
+- **Continue Voting**: Option to go back and change votes before finalizing
 
 ---
 
