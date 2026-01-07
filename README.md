@@ -451,6 +451,12 @@ Submit a bug report in the app - you should receive an email!
 
 ## Recent Updates (Jan 2026)
 
+### Smarter AI Recommendations
+- **No Duplicates**: Recommendations now filter out movies already in your collection
+- **Better Context**: AI receives your favorites, ratings, and watched status for smarter suggestions
+- **More Like This**: New button in movie details to get AI recommendations based on a specific movie
+- **Instant Feedback**: Movies you add are hidden immediately from the recommendation list
+
 ### Voting Session Movie Picks
 - **Movie Picker**: Each participant picks a configurable number of movies when joining a voting session
 - **Configurable Limit**: Session creator sets movies per user (1-10, default 5)
