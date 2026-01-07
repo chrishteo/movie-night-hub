@@ -451,6 +451,12 @@ Submit a bug report in the app - you should receive an email!
 
 ## Recent Updates (Jan 2026)
 
+### Simplified UI: Favorites Removed
+- **Why**: The global favorites feature didn't fit the per-user model - ratings serve this purpose better
+- **Per-User Ratings**: Rate movies 1-5 stars independently from other users
+- **Cleaner Interface**: Movie cards and list view are now less cluttered
+- **Focus on Decisions**: The app is designed to help groups decide what to watch, not maintain personal favorites
+
 ### Smarter AI Recommendations
 - **No Duplicates**: Recommendations now filter out movies already in your collection
 - **Better Context**: AI receives your ratings and watched status for smarter suggestions
