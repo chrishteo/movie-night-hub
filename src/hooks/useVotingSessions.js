@@ -20,7 +20,10 @@ import {
   checkAndAutoCloseSession,
   subscribeToVotingSessions,
   subscribeToSessionParticipants,
-  subscribeToSessionVotes
+  subscribeToSessionVotes,
+  getSessionMovies,
+  addSessionMovies,
+  subscribeToSessionMovies
 } from '../lib/database'
 
 export function useVotingSessions(authUserId = null) {
@@ -97,9 +100,9 @@ export function useVotingSessions(authUserId = null) {
   }, [fetchSessions, fetchMyInvites, fetchAllSessions])
 
   // Create a new session
-  const createSession = useCallback(async (name, participantUserIds = []) => {
+  const createSession = useCallback(async (name, participantUserIds = [], moviesPerUser = 5) => {
     try {
-      const session = await createVotingSession(name, authUserId)
+      const session = await createVotingSession(name, authUserId, moviesPerUser)
 
       // Add participants if provided
       if (participantUserIds.length > 0) {
@@ -119,6 +122,25 @@ export function useVotingSessions(authUserId = null) {
       throw err
     }
   }, [authUserId, fetchSessions])
+
+  // Accept invite with movie picks
+  const acceptWithMovies = useCallback(async (sessionId, movieIds) => {
+    if (!authUserId) return
+    try {
+      // First update participant status to accepted
+      await updateParticipantStatus(sessionId, authUserId, 'accepted')
+
+      // Then add the selected movies
+      if (movieIds.length > 0) {
+        await addSessionMovies(sessionId, movieIds, authUserId)
+      }
+
+      await fetchMyInvites()
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [authUserId, fetchMyInvites])
 
   // End a session with a winner
   const endSession = useCallback(async (sessionId, winnerMovieId = null) => {
@@ -235,6 +257,7 @@ export function useVotingSessions(authUserId = null) {
     endSession,
     cancelSession,
     respondToInvite,
+    acceptWithMovies,
     leaveSession,
     removeParticipant,
     addParticipants,
@@ -250,6 +273,7 @@ export function useVotingSession(sessionId, authUserId = null) {
   const [session, setSession] = useState(null)
   const [participants, setParticipants] = useState([])
   const [votes, setVotes] = useState([])
+  const [sessionMovies, setSessionMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -257,14 +281,16 @@ export function useVotingSession(sessionId, authUserId = null) {
     if (!sessionId) return
     try {
       setLoading(true)
-      const [sessionData, participantsData, votesData] = await Promise.all([
+      const [sessionData, participantsData, votesData, moviesData] = await Promise.all([
         getVotingSession(sessionId),
         getSessionParticipants(sessionId),
-        getSessionVotes(sessionId)
+        getSessionVotes(sessionId),
+        getSessionMovies(sessionId)
       ])
       setSession(sessionData)
       setParticipants(participantsData)
       setVotes(votesData)
+      setSessionMovies(moviesData)
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -316,9 +342,19 @@ export function useVotingSession(sessionId, authUserId = null) {
       }
     })
 
+    // Subscribe to session movies changes
+    const moviesSub = subscribeToSessionMovies(sessionId, (payload) => {
+      if (payload.eventType === 'INSERT' && payload.new) {
+        setSessionMovies(prev => [...prev.filter(m => m.movie_id !== payload.new.movie_id), payload.new])
+      } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+        setSessionMovies(prev => prev.filter(m => m.id !== payload.old.id))
+      }
+    })
+
     return () => {
       participantSub.unsubscribe()
       votesSub.unsubscribe()
+      moviesSub.unsubscribe()
     }
   }, [sessionId, fetchSession])
 
@@ -360,6 +396,7 @@ export function useVotingSession(sessionId, authUserId = null) {
     session,
     participants,
     votes,
+    sessionMovies,
     loading,
     error,
     castVote,

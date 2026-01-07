@@ -971,10 +971,10 @@ export async function getVotingSession(sessionId) {
   return data
 }
 
-export async function createVotingSession(name, createdBy) {
+export async function createVotingSession(name, createdBy, moviesPerUser = 5) {
   const { data, error } = await supabase
     .from('voting_sessions')
-    .insert([{ name, created_by: createdBy }])
+    .insert([{ name, created_by: createdBy, movies_per_user: moviesPerUser }])
     .select()
     .single()
 
@@ -1278,6 +1278,67 @@ export function subscribeToSessionVotes(sessionId, callback) {
       event: '*',
       schema: 'public',
       table: 'votes',
+      filter: `session_id=eq.${sessionId}`
+    }, callback)
+    .subscribe()
+}
+
+// ============ VOTING SESSION MOVIES (User Picks) ============
+
+export async function getSessionMovies(sessionId) {
+  const { data, error } = await supabase
+    .from('voting_session_movies')
+    .select('*')
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+  return data
+}
+
+export async function addSessionMovies(sessionId, movieIds, userId) {
+  const movies = movieIds.map(movieId => ({
+    session_id: sessionId,
+    movie_id: movieId,
+    selected_by: userId
+  }))
+
+  const { data, error } = await supabase
+    .from('voting_session_movies')
+    .upsert(movies, { onConflict: 'session_id,movie_id' })
+    .select()
+
+  if (error) throw error
+  return data
+}
+
+export async function removeSessionMovie(sessionId, movieId) {
+  const { error } = await supabase
+    .from('voting_session_movies')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('movie_id', movieId)
+
+  if (error) throw error
+}
+
+export async function clearSessionMovies(sessionId, userId) {
+  // Clear all movies selected by a specific user in a session
+  const { error } = await supabase
+    .from('voting_session_movies')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('selected_by', userId)
+
+  if (error) throw error
+}
+
+export function subscribeToSessionMovies(sessionId, callback) {
+  return supabase
+    .channel(`session-movies-${sessionId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'voting_session_movies',
       filter: `session_id=eq.${sessionId}`
     }, callback)
     .subscribe()

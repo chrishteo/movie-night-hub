@@ -140,6 +140,7 @@ export default function App() {
     endSession,
     cancelSession,
     respondToInvite: respondToSessionInvite,
+    acceptWithMovies,
     leaveSession,
     removeParticipant,
     addParticipants,
@@ -1024,6 +1025,7 @@ export default function App() {
             setShowVoting(true)
           }}
           onRespondToInvite={respondToSessionInvite}
+          onAcceptWithMovies={acceptWithMovies}
           onDeleteSession={deleteSession}
           onClose={() => setShowVotingSessions(false)}
           darkMode={darkMode}

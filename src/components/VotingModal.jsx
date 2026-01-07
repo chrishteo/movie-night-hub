@@ -21,6 +21,7 @@ export default function VotingModal({
   const {
     participants,
     votes,
+    sessionMovies,
     loading: sessionLoading,
     castVote,
     removeVote,
@@ -67,21 +68,30 @@ export default function VotingModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  // Get accepted participants' movies
+  // Get accepted participants
   const acceptedParticipants = participants.filter(p => p.status === 'accepted')
   const acceptedUserNames = acceptedParticipants
     .map(p => users.find(u => u.auth_id === p.user_id)?.name)
     .filter(Boolean)
 
-  // Filter movies by accepted participants
-  const participantMovies = acceptedUserNames.length > 0
-    ? allMovies.filter(m => acceptedUserNames.includes(m.added_by))
-    : allMovies
-
-  const unwatched = participantMovies.filter(m => !m.watched)
+  // Get movies selected for this session (from voting_session_movies table)
+  const selectedMovies = useMemo(() => {
+    if (!sessionMovies || sessionMovies.length === 0) return []
+    return sessionMovies
+      .map(sm => {
+        const movie = allMovies.find(m => m.id === sm.movie_id)
+        if (movie) {
+          // Attach who selected this movie
+          const selector = users.find(u => u.auth_id === sm.selected_by)
+          return { ...movie, selectedBy: selector?.name || 'Unknown' }
+        }
+        return null
+      })
+      .filter(Boolean)
+  }, [sessionMovies, allMovies, users])
 
   // Movies to show based on voting phase
-  const moviesToVote = votingPhase === 'runoff' ? runoffMovies : unwatched
+  const moviesToVote = votingPhase === 'runoff' ? runoffMovies : selectedMovies
 
   // Calculate voting progress for accepted participants only
   const votingProgress = useMemo(() => {
@@ -475,7 +485,13 @@ export default function VotingModal({
 
             {/* Movie list */}
             {moviesToVote.length === 0 ? (
-              <p className="text-center py-8 opacity-50">No movies to vote on</p>
+              <div className="text-center py-8">
+                <p className="text-4xl mb-2">🎬</p>
+                <p className="opacity-70 mb-1">No movies to vote on yet</p>
+                <p className="text-xs text-gray-400">
+                  Waiting for participants to pick their movies
+                </p>
+              </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {moviesToVote.map(movie => {
@@ -510,6 +526,11 @@ export default function VotingModal({
                         >
                           {movie.title}
                         </p>
+                        {movie.selectedBy && (
+                          <p className="text-xs text-gray-400 truncate">
+                            picked by {movie.selectedBy}
+                          </p>
+                        )}
                         <div className="flex gap-2 mt-1">
                           <button
                             onClick={() => {

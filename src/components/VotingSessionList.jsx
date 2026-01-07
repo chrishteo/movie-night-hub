@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Avatar } from './AvatarPicker'
 import ParticipantSelector from './ParticipantSelector'
+import MoviePickerModal from './MoviePickerModal'
 
 export default function VotingSessionList({
   sessions,
@@ -13,6 +14,7 @@ export default function VotingSessionList({
   onCreateSession,
   onOpenSession,
   onRespondToInvite,
+  onAcceptWithMovies,
   onDeleteSession,
   onClose,
   darkMode
@@ -20,8 +22,14 @@ export default function VotingSessionList({
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [selectedParticipants, setSelectedParticipants] = useState([])
+  const [moviesPerUser, setMoviesPerUser] = useState(5)
   const [creating, setCreating] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
+
+  // Movie picker state
+  const [showMoviePicker, setShowMoviePicker] = useState(false)
+  const [pendingSession, setPendingSession] = useState(null) // Session waiting for movie picks
+  const [pendingInviteSession, setPendingInviteSession] = useState(null) // Invite waiting for movie picks
 
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const cardInner = darkMode ? 'bg-gray-700' : 'bg-gray-100'
@@ -41,15 +49,55 @@ export default function VotingSessionList({
         .map(u => u.auth_id)
         .filter(Boolean)
 
-      await onCreateSession(sessionName.trim(), participantAuthIds)
+      // Create session and get it back
+      const session = await onCreateSession(sessionName.trim(), participantAuthIds, moviesPerUser)
+
+      // Show movie picker for creator to select their movies
+      if (session) {
+        setPendingSession(session)
+        setShowMoviePicker(true)
+      }
+
       setSessionName('')
       setSelectedParticipants([])
+      setMoviesPerUser(5)
       setShowCreateForm(false)
     } catch (err) {
       console.error('Failed to create session:', err)
     } finally {
       setCreating(false)
     }
+  }
+
+  // Handle creator's movie picks after session creation
+  const handleCreatorMoviePicks = async (movieIds) => {
+    if (pendingSession && onAcceptWithMovies) {
+      await onAcceptWithMovies(pendingSession.id, movieIds)
+    }
+    setShowMoviePicker(false)
+    setPendingSession(null)
+  }
+
+  // Start the accept flow - show movie picker first
+  const handleStartAccept = (invite) => {
+    setPendingInviteSession(invite)
+    setShowMoviePicker(true)
+  }
+
+  // Handle movie picks when accepting an invite
+  const handleAcceptWithMovies = async (movieIds) => {
+    if (pendingInviteSession && onAcceptWithMovies) {
+      await onAcceptWithMovies(pendingInviteSession.session_id, movieIds)
+    }
+    setShowMoviePicker(false)
+    setPendingInviteSession(null)
+  }
+
+  // Cancel movie picking
+  const handleCancelMoviePicker = () => {
+    setShowMoviePicker(false)
+    setPendingSession(null)
+    setPendingInviteSession(null)
   }
 
   const toggleParticipant = (userName) => {
@@ -108,7 +156,7 @@ export default function VotingSessionList({
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => onRespondToInvite(invite.session_id, true)}
+                        onClick={() => handleStartAccept(invite)}
                         className="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-sm"
                       >
                         Accept
@@ -203,6 +251,29 @@ export default function VotingSessionList({
               } focus:outline-none focus:ring-2 focus:ring-purple-500 mb-3`}
               autoFocus
             />
+
+            {/* Movies Per User */}
+            <div className="mb-3">
+              <label className="text-sm font-medium mb-2 block">Movies per user:</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={moviesPerUser}
+                  onChange={(e) => setMoviesPerUser(Number(e.target.value))}
+                  className="flex-1 accent-purple-500"
+                />
+                <span className={`w-8 text-center font-bold text-lg ${
+                  darkMode ? 'text-purple-400' : 'text-purple-600'
+                }`}>
+                  {moviesPerUser}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Each participant picks {moviesPerUser} movie{moviesPerUser !== 1 ? 's' : ''} for voting
+              </p>
+            </div>
 
             {/* Participant Selection */}
             <div className="mb-3">
@@ -346,6 +417,17 @@ export default function VotingSessionList({
           Close
         </button>
       </div>
+
+      {/* Movie Picker Modal */}
+      {showMoviePicker && (
+        <MoviePickerModal
+          maxPicks={pendingSession?.movies_per_user || pendingInviteSession?.session?.movies_per_user || 5}
+          userName={currentUser}
+          onConfirm={pendingSession ? handleCreatorMoviePicks : handleAcceptWithMovies}
+          onCancel={handleCancelMoviePicker}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   )
 }

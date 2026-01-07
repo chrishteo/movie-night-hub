@@ -351,12 +351,20 @@ In Supabase SQL Editor, run `supabase/migrations/voting_sessions.sql` to create:
 Run these migrations for proper voting permissions:
 - `supabase/migrations/votes_secure_policy.sql` - Secure voting (must vote as yourself + be participant)
 - `supabase/migrations/voting_sessions_autoclose_policy_v2.sql` - Allow participants to complete sessions
+- `supabase/migrations/voting_session_movies.sql` - Movie picking for sessions
 
 ### 3. How Voting Sessions Work
 
 - **Multiple Sessions**: Different groups can run separate voting sessions simultaneously
 - **Session Creator**: Can invite/remove participants, cancel session, end session
-- **Participants**: Receive invite notifications, can accept/decline, then vote on movies
+- **Movies Per User**: Creator sets how many movies each person picks (1-10, default 5)
+- **Movie Picking Flow**:
+  1. Creator creates session and sets movies per user
+  2. Creator picks their movies immediately after creation
+  3. Invited participants see a movie picker when accepting
+  4. Each participant picks up to N movies from their unwatched list
+  5. Only picked movies appear in the voting pool
+- **Participants**: Receive invite notifications, pick movies when accepting, then vote
 - **Leave Session**: Participants can leave anytime; session auto-closes if all leave
 - **Voting Progress**: Real-time progress bar shows who has voted
 - **Winner Declaration**: When all votes are cast, winner is automatically determined
@@ -442,6 +450,13 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Voting Session Movie Picks
+- **Movie Picker**: Each participant picks a configurable number of movies when joining a voting session
+- **Configurable Limit**: Session creator sets movies per user (1-10, default 5)
+- **Focused Voting**: Only picked movies appear in the voting pool, making sessions faster
+- **Visual Feedback**: Movies show who picked them during voting
+- **Flexible**: If a user has fewer movies than the limit, they pick all they have
 
 ### Watch Invites & Per-User Tracking
 - **Watch Invites**: When you log a movie night, other participants receive an invite to confirm they watched it
