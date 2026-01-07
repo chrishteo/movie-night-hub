@@ -48,12 +48,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Anthropic API key not configured' })
   }
 
-  // Sort movies by preference: favorites first, then by rating, then unwatched
+  // Sort movies by preference: high ratings first, then unwatched
   const sortedMovies = [...movies].sort((a, b) => {
-    // Favorites first
-    if (a.favorite && !b.favorite) return -1;
-    if (!a.favorite && b.favorite) return 1;
-    // Then by rating (higher first)
+    // By rating (higher first)
     const ratingA = a.rating || 0;
     const ratingB = b.rating || 0;
     if (ratingA !== ratingB) return ratingB - ratingA;
@@ -68,7 +65,6 @@ export default async function handler(req, res) {
   const movieList = limitedMovies.map(m => {
     let info = m.title;
     if (m.genre) info += ` (${m.genre})`;
-    if (m.favorite) info += ' [favorite]';
     if (m.rating >= 4) info += ` [rated ${m.rating}/5]`;
     if (m.watched) info += ' [watched]';
     return info;

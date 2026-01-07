@@ -122,7 +122,6 @@ export async function addMovie(movie, userId = null) {
       streaming: movie.streaming || [],
       watched: movie.watched || false,
       watched_at: movie.watched_at || null,
-      favorite: movie.favorite || false,
       notes: movie.notes || null,
       added_by: movie.added_by,
       user_id: userId, // Link to authenticated user
@@ -141,7 +140,7 @@ export async function addMovie(movie, userId = null) {
 
 export async function updateMovie(id, updates) {
   // Build update object with only the fields that are provided
-  // This prevents setting title to undefined or resetting watched/favorite
+  // This prevents setting title to undefined or resetting watched
   const updateData = {}
 
   // Only include fields that are explicitly in the updates object
@@ -155,7 +154,6 @@ export async function updateMovie(id, updates) {
   if (updates.streaming !== undefined) updateData.streaming = updates.streaming || []
   if (updates.watched !== undefined) updateData.watched = updates.watched
   if (updates.watched_at !== undefined) updateData.watched_at = updates.watched_at
-  if (updates.favorite !== undefined) updateData.favorite = updates.favorite
   if (updates.notes !== undefined) updateData.notes = updates.notes || null
 
   const { data, error } = await supabase
@@ -185,18 +183,6 @@ export async function toggleMovieWatched(id, watched) {
       watched,
       watched_at: watched ? new Date().toISOString() : null
     })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function toggleMovieFavorite(id, favorite) {
-  const { data, error } = await supabase
-    .from('movies')
-    .update({ favorite })
     .eq('id', id)
     .select()
     .single()

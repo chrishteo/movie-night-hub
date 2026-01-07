@@ -57,7 +57,6 @@ export default function Recommendations({
         streaming: rec.streaming || [],
         rating: 0,
         watched: false,
-        favorite: false,
         added_by: currentUser,
         notes: rec.reason || ''
       })

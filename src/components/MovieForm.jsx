@@ -22,7 +22,6 @@ export default function MovieForm({
     notes: movie?.notes || '',
     watched: movie?.watched || false,
     watched_at: movie?.watched_at || null,
-    favorite: movie?.favorite || false,
     trailer_url: movie?.trailer_url || '',
     tmdb_rating: movie?.tmdb_rating || null,
     cast: movie?.cast || [],

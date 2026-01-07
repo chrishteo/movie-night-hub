@@ -16,7 +16,6 @@ export default function MovieDetailsModal({
   onClose,
   onEdit,
   onToggleWatched,
-  onToggleFavorite,
   onAddMovie,
   existingMovies,
   currentUser,
@@ -295,16 +294,6 @@ export default function MovieDetailsModal({
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            <button
-              onClick={() => onToggleFavorite(movie.id)}
-              className={`flex-1 px-4 py-2 rounded ${
-                movie.favorite
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-gray-600 hover:bg-gray-500'
-              }`}
-            >
-              {movie.favorite ? '♥ Favorited' : '♡ Add to Favorites'}
-            </button>
             <button
               onClick={() => onToggleMyWatched ? onToggleMyWatched(movie.id) : onToggleWatched(movie.id)}
               className={`flex-1 px-4 py-2 rounded ${

@@ -14,7 +14,6 @@ export default function MovieCard({
   movie,
   users,
   onToggleWatched,
-  onToggleFavorite,
   onEdit,
   onDelete,
   onClick,
@@ -44,7 +43,6 @@ export default function MovieCard({
   const startY = useRef(0)
 
   // Animation states
-  const [heartPulse, setHeartPulse] = useState(false)
   const [checkBounce, setCheckBounce] = useState(false)
 
   const handleTouchStart = (e) => {
@@ -78,21 +76,9 @@ export default function MovieCard({
       } else {
         onToggleWatched(movie.id)
       }
-    } else if (swipeX < -80) {
-      // Swipe left - toggle favorite
-      setHeartPulse(true)
-      setTimeout(() => setHeartPulse(false), 300)
-      onToggleFavorite(movie.id)
     }
     setSwiping(false)
     setSwipeX(0)
-  }
-
-  const handleFavoriteClick = (e) => {
-    e.stopPropagation()
-    setHeartPulse(true)
-    setTimeout(() => setHeartPulse(false), 300)
-    onToggleFavorite(movie.id)
   }
 
   const handleWatchedClick = (e) => {
@@ -119,12 +105,9 @@ export default function MovieCard({
 
   return (
     <div className="relative overflow-hidden rounded-lg animate-slide-in">
-      {/* Swipe background indicators */}
+      {/* Swipe background indicator */}
       <div className={`absolute inset-0 flex items-center justify-start pl-4 bg-green-500 transition-opacity ${swipeX > 40 ? 'opacity-100' : 'opacity-0'}`}>
         <span className="text-white text-2xl">✓</span>
-      </div>
-      <div className={`absolute inset-0 flex items-center justify-end pr-4 bg-red-500 transition-opacity ${swipeX < -40 ? 'opacity-100' : 'opacity-0'}`}>
-        <span className="text-white text-2xl">♥</span>
       </div>
 
       <div
@@ -158,32 +141,23 @@ export default function MovieCard({
         <div className="p-2 flex-1 min-w-0">
           <div className="flex justify-between items-start gap-1">
             <h3 className="font-bold text-sm truncate">{movie.title}</h3>
-            <div className="flex gap-0.5 flex-shrink-0">
-              <button
-                onClick={handleFavoriteClick}
-                className={`text-sm px-1 rounded ${movie.favorite ? 'text-red-500 bg-red-500/20' : 'text-gray-400'} hover:text-red-400 ${heartPulse ? 'animate-heart-pulse' : ''}`}
-                title={movie.favorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                {movie.favorite ? '♥' : '♡'}
-              </button>
-              {/* Only show edit/delete if user can modify this movie */}
-              {canModify && (
-                <>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(movie); }}
-                    className="text-xs text-gray-400 hover:text-gray-200"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(movie.id); }}
-                    className="text-xs text-red-400 hover:text-red-300"
-                  >
-                    ✕
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Only show edit/delete if user can modify this movie */}
+            {canModify && (
+              <div className="flex gap-0.5 flex-shrink-0">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(movie); }}
+                  className="text-xs text-gray-400 hover:text-gray-200"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(movie.id); }}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
           <p className="text-xs opacity-70 truncate">
             {movie.director} {movie.director && movie.year && '•'} {movie.year}

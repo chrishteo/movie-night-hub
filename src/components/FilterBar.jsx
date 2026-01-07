@@ -83,17 +83,6 @@ export default function FilterBar({
         <option value="unwatchedByMe">Not watched by me</option>
       </select>
 
-      <button
-        onClick={() => onFilterChange('favorites', !filters.favorites)}
-        className={`px-2 py-1 rounded text-sm border ${
-          filters.favorites
-            ? 'bg-yellow-600 border-yellow-600'
-            : `${card} ${border}`
-        }`}
-      >
-        ❤️
-      </button>
-
       <select
         value={filters.sortBy}
         onChange={(e) => onFilterChange('sortBy', e.target.value)}

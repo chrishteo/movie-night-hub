@@ -21,7 +21,7 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 - **AI-Powered** (via Anthropic Claude):
   - Auto-fill movie details by searching
   - Smart recommendations based on your collection
-- **Filtering & Sorting**: By genre, mood, streaming service, watched status, favorites, and who added
+- **Filtering & Sorting**: By genre, mood, streaming service, watched status, and who added
 - **Collections**: Organize movies into custom collections
   - Create collections with custom emoji and color
   - View mode with nice movie cards (poster, rating, genre, watched status)
@@ -453,7 +453,7 @@ Submit a bug report in the app - you should receive an email!
 
 ### Smarter AI Recommendations
 - **No Duplicates**: Recommendations now filter out movies already in your collection
-- **Better Context**: AI receives your favorites, ratings, and watched status for smarter suggestions
+- **Better Context**: AI receives your ratings and watched status for smarter suggestions
 - **More Like This**: New button in movie details to get AI recommendations based on a specific movie
 - **Instant Feedback**: Movies you add are hidden immediately from the recommendation list
 

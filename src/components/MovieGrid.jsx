@@ -5,7 +5,6 @@ import SkeletonCard from './SkeletonCard'
 function MovieListRow({
   movie,
   onToggleWatched,
-  onToggleFavorite,
   onClick,
   onDelete,
   darkMode,
@@ -58,9 +57,6 @@ function MovieListRow({
             {movie.year && <span className={`text-sm ${muted}`}>({movie.year})</span>}
             {movie.watched && (
               <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">Watched</span>
-            )}
-            {movie.favorite && (
-              <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">♥ Favorite</span>
             )}
           </div>
 
@@ -146,17 +142,6 @@ function MovieListRow({
         >
           ✓
         </button>
-        <button
-          onClick={() => onToggleFavorite(movie.id)}
-          className={`p-2 rounded-lg transition-colors ${
-            movie.favorite
-              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-              : darkMode ? 'bg-gray-700 text-gray-400 hover:text-red-400' : 'bg-gray-100 text-gray-400 hover:text-red-500'
-          }`}
-          title={movie.favorite ? 'Remove favorite' : 'Add favorite'}
-        >
-          ♥
-        </button>
         {/* Only show delete button if user can modify this movie */}
         {canModify && (
           <button
@@ -176,7 +161,6 @@ export default function MovieGrid({
   movies,
   users,
   onToggleWatched,
-  onToggleFavorite,
   onEdit,
   onDelete,
   onMovieClick,
@@ -231,7 +215,6 @@ export default function MovieGrid({
             key={movie.id}
             movie={movie}
             onToggleWatched={onToggleWatched}
-            onToggleFavorite={onToggleFavorite}
             onClick={onMovieClick}
             onDelete={onDelete}
             darkMode={darkMode}
@@ -254,7 +237,6 @@ export default function MovieGrid({
           movie={movie}
           users={users}
           onToggleWatched={onToggleWatched}
-          onToggleFavorite={onToggleFavorite}
           onEdit={onEdit}
           onDelete={onDelete}
           onClick={onMovieClick}

@@ -19,7 +19,7 @@ const TOUR_STEPS = [
   {
     target: '[data-tour="movie-card"]',
     title: 'Your Movies',
-    description: 'Each movie card shows the poster, title, and quick actions. Click to see details, mark as watched, add to favorites, or delete.',
+    description: 'Each movie card shows the poster, title, and quick actions. Click to see details, mark as watched, or delete.',
     position: 'bottom',
     icon: '🎥'
   },

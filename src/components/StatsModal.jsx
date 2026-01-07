@@ -7,7 +7,6 @@ export default function StatsModal({ movies, onClose, darkMode }) {
   // Calculate statistics
   const totalMovies = movies.length
   const watchedMovies = movies.filter(m => m.watched).length
-  const favoriteMovies = movies.filter(m => m.favorite).length
 
   // Average rating (only rated movies)
   const ratedMovies = movies.filter(m => m.rating > 0)
@@ -71,22 +70,18 @@ export default function StatsModal({ movies, onClose, darkMode }) {
   return (
     <Modal title="📊 Statistics" onClose={onClose} darkMode={darkMode}>
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <div className={`p-3 rounded-lg border ${border} text-center`}>
           <p className="text-3xl font-bold text-purple-500">{totalMovies}</p>
           <p className={`text-sm ${textMuted}`}>Total Movies</p>
-        </div>
-        <div className={`p-3 rounded-lg border ${border} text-center`}>
-          <p className="text-3xl font-bold text-yellow-500">{avgRating}</p>
-          <p className={`text-sm ${textMuted}`}>Avg Rating</p>
         </div>
         <div className={`p-3 rounded-lg border ${border} text-center`}>
           <p className="text-3xl font-bold text-green-500">{watchedMovies}</p>
           <p className={`text-sm ${textMuted}`}>Watched</p>
         </div>
         <div className={`p-3 rounded-lg border ${border} text-center`}>
-          <p className="text-3xl font-bold text-red-500">{favoriteMovies}</p>
-          <p className={`text-sm ${textMuted}`}>Favorites</p>
+          <p className="text-3xl font-bold text-yellow-500">{avgRating}</p>
+          <p className={`text-sm ${textMuted}`}>Avg Rating</p>
         </div>
       </div>
 

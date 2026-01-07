@@ -5,7 +5,6 @@ import {
   updateMovie as updateMovieDb,
   deleteMovie as deleteMovieDb,
   toggleMovieWatched,
-  toggleMovieFavorite,
   subscribeToMovies
 } from '../lib/database'
 
@@ -170,27 +169,6 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     }
   }, [])
 
-  // Fixed: Use functional update to avoid dependency on movies array
-  const toggleFavorite = useCallback(async (id) => {
-    // Get current state without depending on movies in closure
-    let currentFavorite = null
-    setMovies(prev => {
-      const movie = prev.find(m => m.id === id)
-      currentFavorite = movie?.favorite
-      return prev // Don't modify yet
-    })
-
-    if (currentFavorite === null) return
-
-    try {
-      const updated = await toggleMovieFavorite(id, !currentFavorite)
-      setMovies(prev => prev.map(m => m.id === id ? updated : m))
-    } catch (err) {
-      setError(err.message)
-      throw err
-    }
-  }, [])
-
   // Check if current user can modify a movie
   // For backward compatibility, also check added_by name for movies without user_id
   const canModifyMovie = useCallback((movie, currentUserName = null) => {
@@ -217,7 +195,6 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     updateMovie,
     deleteMovie,
     toggleWatched,
-    toggleFavorite,
     loadMore,
     refetch: fetchMovies,
     canModifyMovie,

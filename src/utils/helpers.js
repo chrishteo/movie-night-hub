@@ -86,7 +86,6 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}, allU
       if (myStatus?.watched) return false
     }
 
-    if (filters.favorites && !m.favorite) return false
     if (filters.streaming && (!m.streaming || !m.streaming.includes(filters.streaming))) return false
     return true
   })

@@ -62,7 +62,6 @@ export default function App() {
     mood: '',
     streaming: '',
     watched: 'all',
-    favorites: false,
     sortBy: 'created_at'
   })
 
@@ -99,7 +98,6 @@ export default function App() {
     updateMovie,
     deleteMovie,
     toggleWatched,
-    toggleFavorite,
     loadMore,
     canModifyMovie
   } = useMovies(authUserId, serverFilters)
@@ -896,7 +894,6 @@ export default function App() {
         movies={filteredMovies}
         users={users}
         onToggleWatched={toggleWatched}
-        onToggleFavorite={toggleFavorite}
         onEdit={setEditingMovie}
         onDelete={handleDeleteMovie}
         onMovieClick={setSelectedMovie}
@@ -974,7 +971,6 @@ export default function App() {
           onClose={() => setSelectedMovie(null)}
           onEdit={setEditingMovie}
           onToggleWatched={toggleWatched}
-          onToggleFavorite={toggleFavorite}
           onAddMovie={handleAddMovie}
           existingMovies={movies}
           currentUser={currentUser}
