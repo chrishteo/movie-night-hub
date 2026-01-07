@@ -10,7 +10,6 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 - **Decision Tools**:
   - Spin the Wheel: Random movie picker with participant selection
   - Voting System: Users vote yes/no on movies with participant selection
-  - Movie of the Week: Schedule picks with history
 - **Watch Invites**: Log movie nights and send invites to participants
   - Each user confirms what they watched independently
   - Accept with optional rating or decline
@@ -198,7 +197,6 @@ movie-night-hub/
 - **🗳️ Vote**: Each user votes thumbs up/down, declare a winner
   - Toggle votes by clicking again to remove
   - Multiple exit options (Esc key, X button, click outside)
-- **📅 Movie of the Week**: Pick and track weekly selections
 
 ### AI Recommendations
 
@@ -451,11 +449,11 @@ Submit a bug report in the app - you should receive an email!
 
 ## Recent Updates (Jan 2026)
 
-### Simplified UI: Favorites Removed
-- **Why**: The global favorites feature didn't fit the per-user model - ratings serve this purpose better
-- **Per-User Ratings**: Rate movies 1-5 stars independently from other users
-- **Cleaner Interface**: Movie cards and list view are now less cluttered
-- **Focus on Decisions**: The app is designed to help groups decide what to watch, not maintain personal favorites
+### Simplified UI: Removed Redundant Features
+- **Favorites Removed**: Global favorites didn't fit the per-user model - ratings serve this purpose better
+- **Movie of the Week Removed**: Redundant with Spin Wheel (random pick) and Voting Sessions (group decisions)
+- **Cleaner Interface**: Fewer buttons, more focused feature set
+- **Focus on Decisions**: The app is designed to help groups decide what to watch
 
 ### Smarter AI Recommendations
 - **No Duplicates**: Recommendations now filter out movies already in your collection
@@ -532,8 +530,8 @@ Submit a bug report in the app - you should receive an email!
 - Announcement system with dismissible banners
 
 ### Mobile Improvements
-- **Bottom Navigation**: All 12 features accessible via horizontal scroll
-  - Add, Select, Hot, Spin, Vote, MOTW, Schedule, History, AI Recs, Collections, Share, Stats
+- **Bottom Navigation**: All features accessible via horizontal scroll
+  - Add, Select, Hot, Spin, Invites, Vote, Schedule, History, AI Recs, Collections, Share, Stats
 - **Collections**: Mobile-friendly drill-down layout
   - Full-width collection list, tap to view details
   - Back arrow navigation, responsive movie grids

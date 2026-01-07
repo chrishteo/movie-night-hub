@@ -6,7 +6,6 @@ export default function BottomNav({
   onShowStats,
   onShowTrending,
   onShowScheduler,
-  onShowMOTW,
   onShowHistory,
   onShowShare,
   onShowCollections,
@@ -81,13 +80,6 @@ export default function BottomNav({
               <span className="absolute top-1 right-2 bg-red-400 rounded-full min-w-[1.25rem] h-5 animate-ping opacity-75"></span>
             </>
           )}
-        </button>
-        <button
-          onClick={onShowMOTW}
-          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-yellow-500 active:bg-yellow-500/20 transition-colors"
-        >
-          <span className="text-xl">🎬</span>
-          <span className="text-xs mt-0.5">MOTW</span>
         </button>
         <button
           onClick={onShowScheduler}

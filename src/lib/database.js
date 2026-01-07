@@ -250,35 +250,6 @@ export async function removeVote(movieId, userName, userId = null) {
   if (error) throw error
 }
 
-// ============ MOVIE OF THE WEEK ============
-
-export async function getMovieOfTheWeekHistory() {
-  const { data, error } = await supabase
-    .from('movie_of_the_week')
-    .select('*')
-    .order('picked_at', { ascending: false })
-    .limit(20)
-
-  if (error) throw error
-  return data
-}
-
-export async function setMovieOfTheWeek(movie, pickedBy) {
-  const { data, error } = await supabase
-    .from('movie_of_the_week')
-    .insert([{
-      movie_id: movie.id,
-      movie_title: movie.title,
-      movie_poster: movie.poster || null,
-      picked_by: pickedBy
-    }])
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
 // ============ REAL-TIME SUBSCRIPTIONS ============
 
 export function subscribeToMovies(callback) {
@@ -299,13 +270,6 @@ export function subscribeToUsers(callback) {
   return supabase
     .channel('users-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, callback)
-    .subscribe()
-}
-
-export function subscribeToMOTW(callback) {
-  return supabase
-    .channel('motw-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_of_the_week' }, callback)
     .subscribe()
 }
 

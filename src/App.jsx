@@ -24,7 +24,6 @@ import VotingSessionList from './components/VotingSessionList'
 import { useVotingSessions } from './hooks/useVotingSessions'
 import Recommendations from './components/Recommendations'
 import WatchHistory from './components/WatchHistory'
-import MovieOfTheWeek from './components/MovieOfTheWeek'
 import ShareModal from './components/ShareModal'
 import StatsModal from './components/StatsModal'
 import Confetti from './components/Confetti'
@@ -200,7 +199,6 @@ export default function App() {
   const [showRecs, setShowRecs] = useState(false)
   const [seedMovie, setSeedMovie] = useState(null) // For "More like this" feature
   const [showHistory, setShowHistory] = useState(false)
-  const [showMOTW, setShowMOTW] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
@@ -221,7 +219,6 @@ export default function App() {
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
   const [winner, setWinner] = useState(null)
-  const [currentMOTW, setCurrentMOTW] = useState(null)
 
   // Save dark mode preference
   useEffect(() => {
@@ -536,12 +533,6 @@ export default function App() {
     setTimeout(() => setShowConfetti(false), 3000)
   }
 
-  const handleMOTWPicked = (movie) => {
-    setCurrentMOTW(movie)
-    setShowConfetti(true)
-    setTimeout(() => setShowConfetti(false), 3000)
-  }
-
   const handleWinnerDeclared = (movie) => {
     setWinner(movie)
     setShowVoting(false)
@@ -599,25 +590,6 @@ export default function App() {
         onStartTutorial={startTour}
         onOpenWhatsNew={() => setShowWhatsNew(true)}
       />
-
-      {/* Current Movie of the Week Banner */}
-      {currentMOTW && (
-        <div className={`${card} border ${border} rounded-lg p-3 mb-4 flex items-center gap-3`}>
-          <span className="text-2xl">🎬</span>
-          <div className="flex-1">
-            <p className="text-xs opacity-70">Movie of the Week</p>
-            <p className="font-bold">{currentMOTW.title}</p>
-          </div>
-          {currentMOTW.poster && (
-            <img
-              src={currentMOTW.poster}
-              alt=""
-              className="w-12 h-16 object-cover rounded"
-              onError={(e) => { e.target.style.display = 'none' }}
-            />
-          )}
-        </div>
-      )}
 
       {/* Bulk Action Bar */}
       {bulkSelectMode && (() => {
@@ -728,12 +700,6 @@ export default function App() {
           className="px-3 py-1.5 rounded text-sm bg-orange-600 hover:bg-orange-700 text-white"
         >
           💡
-        </button>
-        <button
-          onClick={() => setShowMOTW(true)}
-          className="px-3 py-1.5 rounded text-sm bg-yellow-600 hover:bg-yellow-700 text-white"
-        >
-          📅
         </button>
         <button
           onClick={() => setShowHistory(true)}
@@ -1093,16 +1059,6 @@ export default function App() {
         />
       )}
 
-      {showMOTW && (
-        <MovieOfTheWeek
-          movies={movies}
-          currentUser={currentUser}
-          onPick={handleMOTWPicked}
-          onClose={() => setShowMOTW(false)}
-          darkMode={darkMode}
-        />
-      )}
-
       {showShare && (
         <ShareModal
           movies={movies}
@@ -1169,7 +1125,6 @@ export default function App() {
         onShowStats={() => setShowStats(true)}
         onShowTrending={() => setShowTrending(true)}
         onShowScheduler={() => setShowScheduler(true)}
-        onShowMOTW={() => setShowMOTW(true)}
         onShowHistory={() => setShowHistory(true)}
         onShowShare={() => setShowShare(true)}
         onShowCollections={() => setShowCollections(true)}
