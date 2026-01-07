@@ -16,6 +16,7 @@ export default function VotingModal({
   onAddParticipants,
   onClose,
   onViewDetails,
+  onScheduleMovie,
   darkMode
 }) {
   const {
@@ -315,6 +316,12 @@ export default function VotingModal({
                 className="w-full px-6 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium"
               >
                 View Movie Details
+              </button>
+              <button
+                onClick={() => onScheduleMovie?.(winnerMovie)}
+                className="w-full px-6 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white font-medium"
+              >
+                📅 Schedule This Movie
               </button>
               {isCreator && (
                 <button

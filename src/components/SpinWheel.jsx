@@ -9,6 +9,7 @@ export default function SpinWheel({
   onClose,
   onMoviePicked,
   onViewDetails,
+  onScheduleMovie,
   darkMode,
   authUserId = null
 }) {
@@ -299,14 +300,22 @@ export default function SpinWheel({
                 <p className="text-xs text-gray-400 mt-2">Click to view details</p>
               </button>
 
-              {/* Log Movie Night section */}
+              {/* Action buttons */}
               {!showLogForm && !loggingComplete && (
-                <button
-                  onClick={handleStartLog}
-                  className="w-full mt-3 px-4 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium flex items-center justify-center gap-2"
-                >
-                  <span>📝</span> Log Movie Night
-                </button>
+                <div className="flex flex-col gap-2 mt-3">
+                  <button
+                    onClick={handleStartLog}
+                    className="w-full px-4 py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium flex items-center justify-center gap-2"
+                  >
+                    <span>📝</span> Log Movie Night
+                  </button>
+                  <button
+                    onClick={() => onScheduleMovie?.(selectedMovie)}
+                    className="w-full px-4 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium flex items-center justify-center gap-2"
+                  >
+                    <span>📅</span> Schedule This Movie
+                  </button>
+                </div>
               )}
 
               {/* Participant selection form */}

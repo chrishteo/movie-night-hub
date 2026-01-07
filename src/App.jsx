@@ -204,6 +204,7 @@ export default function App() {
   const [showTrending, setShowTrending] = useState(false)
   const [showCollections, setShowCollections] = useState(false)
   const [showScheduler, setShowScheduler] = useState(false)
+  const [preSelectedMovie, setPreSelectedMovie] = useState(null)
   const [showInvites, setShowInvites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, movieId: null, movieTitle: '' })
@@ -541,6 +542,15 @@ export default function App() {
       setShowConfetti(false)
       setWinner(null)
     }, 5000)
+  }
+
+  // Handler for scheduling a movie from SpinWheel or VotingModal
+  const handleScheduleFromPicker = (movie) => {
+    setPreSelectedMovie(movie)
+    setShowWheel(false)
+    setShowVoting(false)
+    setCurrentVotingSession(null)
+    setShowScheduler(true)
   }
 
   // Loading state
@@ -973,6 +983,7 @@ export default function App() {
           onClose={() => setShowWheel(false)}
           onMoviePicked={handleMoviePicked}
           onViewDetails={setSelectedMovie}
+          onScheduleMovie={handleScheduleFromPicker}
           darkMode={darkMode}
           authUserId={authUserId}
         />
@@ -1035,6 +1046,7 @@ export default function App() {
             setCurrentVotingSession(null)
           }}
           onViewDetails={setSelectedMovie}
+          onScheduleMovie={handleScheduleFromPicker}
           darkMode={darkMode}
         />
       )}
@@ -1103,10 +1115,16 @@ export default function App() {
       {showScheduler && (
         <MovieNightScheduler
           movies={movies}
-          onClose={() => setShowScheduler(false)}
+          onClose={() => {
+            setShowScheduler(false)
+            setPreSelectedMovie(null)
+          }}
           darkMode={darkMode}
           authUserId={authUserId}
           users={users}
+          preSelectedMovie={preSelectedMovie}
+          onClearPreSelected={() => setPreSelectedMovie(null)}
+          isAdmin={isAdmin}
         />
       )}
 

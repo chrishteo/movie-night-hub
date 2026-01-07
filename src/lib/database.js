@@ -439,16 +439,22 @@ export async function getMovieNights() {
   return data
 }
 
-export async function createMovieNight(movieId, movieTitle, scheduledDate, notes = '', userId = null) {
+export async function createMovieNight(movieId, movieTitle, scheduledDate, notes = '', userId = null, scheduledTime = null) {
+  const insertData = {
+    movie_id: movieId,
+    movie_title: movieTitle,
+    scheduled_date: scheduledDate,
+    notes,
+    user_id: userId
+  }
+
+  if (scheduledTime) {
+    insertData.scheduled_time = scheduledTime
+  }
+
   const { data, error } = await supabase
     .from('movie_nights')
-    .insert([{
-      movie_id: movieId,
-      movie_title: movieTitle,
-      scheduled_date: scheduledDate,
-      notes,
-      user_id: userId
-    }])
+    .insert([insertData])
     .select()
     .single()
 

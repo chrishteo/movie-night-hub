@@ -351,7 +351,15 @@ Run these migrations for proper voting permissions:
 - `supabase/migrations/voting_sessions_autoclose_policy_v2.sql` - Allow participants to complete sessions
 - `supabase/migrations/voting_session_movies.sql` - Movie picking for sessions
 
-### 3. How Voting Sessions Work
+### 3. Run Scheduler Time Migration (Optional)
+
+If you want time support in the scheduler:
+```sql
+-- In Supabase SQL Editor, run:
+ALTER TABLE movie_nights ADD COLUMN IF NOT EXISTS scheduled_time TIME;
+```
+
+### 4. How Voting Sessions Work
 
 - **Multiple Sessions**: Different groups can run separate voting sessions simultaneously
 - **Session Creator**: Can invite/remove participants, cancel session, end session
@@ -448,6 +456,23 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Movie Night Scheduler Enhancements
+- **Calendar View**: Interactive monthly calendar showing scheduled movie nights
+  - Navigate between months with arrow buttons
+  - Green dots indicate days with scheduled events
+  - Click any future date to view events or schedule new
+  - Today highlighted, past dates grayed out
+- **Time Support**: Schedule specific times (24-hour format dropdown, 30-min intervals)
+- **Edit Feature**: Modify scheduled movie nights (date, time, movie, notes, participants)
+- **Permission System**:
+  - Creator can edit/cancel their own scheduled nights
+  - Admin can edit/cancel any scheduled night
+  - Anyone can mark a night as complete
+- **Integration with Decision Tools**:
+  - New "Schedule This Movie" button on Spin Wheel winners
+  - New "Schedule This Movie" button on Voting Session winners
+  - Opens scheduler with movie pre-selected for quick scheduling
 
 ### Enhanced Admin Statistics
 - **Admin-Only Access**: Statistics button now only visible to admin users

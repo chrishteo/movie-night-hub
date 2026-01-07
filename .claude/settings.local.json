@@ -8,7 +8,9 @@
       "Bash(git checkout:*)",
       "Bash(cat:*)",
       "Bash(git restore:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
