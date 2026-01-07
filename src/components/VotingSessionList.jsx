@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Avatar } from './AvatarPicker'
 import ParticipantSelector from './ParticipantSelector'
 import MoviePickerModal from './MoviePickerModal'
+import { useToast } from './Toast'
 
 export default function VotingSessionList({
   sessions,
@@ -19,12 +20,14 @@ export default function VotingSessionList({
   onClose,
   darkMode
 }) {
+  const { addToast } = useToast()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [selectedParticipants, setSelectedParticipants] = useState([])
   const [moviesPerUser, setMoviesPerUser] = useState(5)
   const [creating, setCreating] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
+  const [deletingSessionId, setDeletingSessionId] = useState(null)
 
   // Movie picker state
   const [showMoviePicker, setShowMoviePicker] = useState(false)
@@ -391,12 +394,22 @@ export default function VotingSessionList({
                             <button
                               onClick={async () => {
                                 if (confirm(`Delete session "${session.name}"? This cannot be undone.`)) {
-                                  await onDeleteSession(session.id)
+                                  setDeletingSessionId(session.id)
+                                  try {
+                                    await onDeleteSession(session.id)
+                                    addToast('Session deleted successfully', 'success')
+                                  } catch (err) {
+                                    console.error('Failed to delete session:', err)
+                                    addToast(`Failed to delete: ${err.message}`, 'error')
+                                  } finally {
+                                    setDeletingSessionId(null)
+                                  }
                                 }
                               }}
-                              className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs shrink-0"
+                              disabled={deletingSessionId === session.id}
+                              className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs shrink-0 disabled:opacity-50"
                             >
-                              Delete
+                              {deletingSessionId === session.id ? 'Deleting...' : 'Delete'}
                             </button>
                           </div>
                         </div>

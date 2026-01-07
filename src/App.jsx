@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { useMovies } from './hooks/useMovies'
+import { getCollections, deleteCollection, updateUser } from './lib/database'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
 import { useUserMovieStatus } from './hooks/useUserMovieStatus'
@@ -125,7 +126,8 @@ export default function App() {
     invites,
     pendingCount: invitePendingCount,
     acceptInvite: rawAcceptInvite,
-    declineInvite
+    declineInvite,
+    deleteInvite
   } = useInvites(authUserId)
 
   // Voting sessions
@@ -216,6 +218,36 @@ export default function App() {
   const [showMyBugReports, setShowMyBugReports] = useState(false)
   const [showWhatsNew, setShowWhatsNew] = useState(false)
   const [hasCheckedChangelog, setHasCheckedChangelog] = useState(false)
+  const [adminCollections, setAdminCollections] = useState([])
+
+  // Admin collections handlers
+  const fetchAdminCollections = useCallback(async () => {
+    try {
+      const data = await getCollections()
+      setAdminCollections(data || [])
+    } catch (err) {
+      console.error('Error fetching collections:', err)
+    }
+  }, [])
+
+  const handleDeleteCollection = useCallback(async (collectionId) => {
+    try {
+      await deleteCollection(collectionId)
+      setAdminCollections(prev => prev.filter(c => c.id !== collectionId))
+      addToast('Collection deleted', 'success')
+    } catch (err) {
+      addToast('Failed to delete collection', 'error')
+    }
+  }, [addToast])
+
+  const handleEditUser = useCallback(async (userId, updates) => {
+    try {
+      await updateUser(userId, updates)
+      addToast('User updated', 'success')
+    } catch (err) {
+      addToast('Failed to update user', 'error')
+    }
+  }, [addToast])
 
   // Effects state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -1133,6 +1165,7 @@ export default function App() {
           invites={invites}
           onAccept={handleAcceptInvite}
           onDecline={declineInvite}
+          onDelete={deleteInvite}
           onClose={() => setShowInvites(false)}
           darkMode={darkMode}
           users={users}
@@ -1218,6 +1251,14 @@ export default function App() {
               addToast('Failed to delete movie', 'error')
             }
           }}
+          onEditMovie={(movie) => {
+            setEditingMovie(movie)
+            setShowAdminPanel(false)
+          }}
+          onEditUser={handleEditUser}
+          collections={adminCollections}
+          onFetchCollections={fetchAdminCollections}
+          onDeleteCollection={handleDeleteCollection}
           announcements={announcements}
           onFetchAnnouncements={fetchAnnouncements}
           onAddAnnouncement={async (title, message, type, expiresAt) => {

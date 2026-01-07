@@ -33,15 +33,22 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 
 ### Admin Features
 - **Admin Panel**: Separate admin account with full control
-  - **Users Tab**: View all users, toggle admin status, delete users
-  - **Movies Tab**: Search and delete any movie
+  - **Users Tab**: View all users, toggle admin status, delete users, edit user profiles (name, avatar)
+  - **Movies Tab**: Search, edit, and delete any movie
+  - **Collections Tab**: View all collections with owner info, delete any collection
   - **Announcements Tab**: Create/edit/delete announcements with types (info, warning, update, maintenance)
   - **Changelog Tab**: Manage What's New entries (features, fixes, improvements)
   - **Bug Reports Tab**: View and manage user-submitted bug reports with status tracking
+- **Admin Delete Powers**: Admin can delete any voting session, scheduled movie night, or invite
 - **Announcement Banner**: Dismissible banners at top of app (per-session)
 - **Bug Reporting**: Users can submit bugs and view their own reports
 - **What's New**: Changelog system that auto-shows on login when there are new updates
   - Auto-creates changelog entry when bugs are marked as resolved
+
+### History Management
+- **Delete Past Invites**: Users can delete their own past invites from history
+- **Delete Past Movie Nights**: Creator or admin can delete completed/cancelled movie nights
+- **Delete Voting Sessions**: Creator or admin can delete voting session history
 
 ### Onboarding
 - **Guided Tour**: 7-step interactive tutorial for new users
@@ -456,6 +463,18 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### Enhanced Admin Panel
+- **Collections Tab**: View all collections with owner info, delete any collection
+- **Edit Movies**: Admin can edit any movie directly from admin panel
+- **Edit User Profiles**: Admin can change user names and avatars
+- **Delete History**: Admin can delete voting sessions, scheduled movie nights, and invites
+- **New Migration Required**: Run `supabase/migrations/voting_sessions_admin_delete.sql` for admin delete powers
+
+### History Deletion
+- **Past Invites**: Users can now delete their own past invites from the invites modal
+- **Past Movie Nights**: Creator or admin can delete completed/cancelled movie nights
+- **Voting Sessions**: Creator or admin can delete voting session history
 
 ### Movie Night Scheduler Enhancements
 - **Calendar View**: Interactive monthly calendar showing scheduled movie nights

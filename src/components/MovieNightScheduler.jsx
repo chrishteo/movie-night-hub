@@ -774,7 +774,7 @@ export default function MovieNightScheduler({
                     <span>📜</span> Past
                   </h3>
                   <div className="space-y-2">
-                    {pastNights.slice(0, 5).map(night => (
+                    {pastNights.slice(0, 10).map(night => (
                       <div
                         key={night.id}
                         className={`${card} border ${border} rounded p-3 flex items-center gap-3 opacity-50`}
@@ -788,6 +788,15 @@ export default function MovieNightScheduler({
                               : formatDate(night.scheduled_date)}
                           </p>
                         </div>
+                        {canModifyNight(night) && (
+                          <button
+                            onClick={() => handleDelete(night.id)}
+                            className="p-1.5 rounded hover:bg-red-600/30 text-red-400 text-sm"
+                            title="Remove from history"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

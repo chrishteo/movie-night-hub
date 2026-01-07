@@ -125,6 +125,17 @@ export function useInvites(authUserId) {
     }
   }, [])
 
+  // Delete an invite from history
+  const deleteInvite = useCallback(async (inviteId) => {
+    try {
+      await cancelInvite(inviteId)
+      setInvites(prev => prev.filter(inv => inv.id !== inviteId))
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [])
+
   return {
     invites,
     pendingCount,
@@ -134,6 +145,7 @@ export function useInvites(authUserId) {
     acceptInvite,
     declineInvite,
     cancelSentInvite,
+    deleteInvite,
     refetch: fetchInvites
   }
 }

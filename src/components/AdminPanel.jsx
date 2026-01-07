@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Avatar } from './AvatarPicker'
+import AvatarPicker, { Avatar } from './AvatarPicker'
 import { formatDate } from '../utils/helpers'
 
-const TABS = ['Users', 'Movies', 'Announcements', 'Changelog', 'Bug Reports']
+const TABS = ['Users', 'Movies', 'Collections', 'Announcements', 'Changelog', 'Bug Reports']
 
 const STATUS_COLORS = {
   open: 'bg-yellow-500',
@@ -34,6 +34,12 @@ export default function AdminPanel({
   onToggleUserAdmin,
   onDeleteUser,
   onDeleteMovie,
+  onEditMovie,
+  onEditUser,
+  // Collections
+  collections = [],
+  onFetchCollections,
+  onDeleteCollection,
   // Announcements
   announcements,
   onFetchAnnouncements,
@@ -82,6 +88,11 @@ export default function AdminPanel({
     version: ''
   })
 
+  // User edit state
+  const [editingUser, setEditingUser] = useState(null)
+  const [userForm, setUserForm] = useState({ name: '', avatar: null })
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
   const input = darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
@@ -91,7 +102,8 @@ export default function AdminPanel({
     onFetchAnnouncements(false) // Get all announcements, not just active
     onFetchBugReports()
     onFetchChangelog()
-  }, [onFetchAnnouncements, onFetchBugReports, onFetchChangelog])
+    if (onFetchCollections) onFetchCollections()
+  }, [onFetchAnnouncements, onFetchBugReports, onFetchChangelog, onFetchCollections])
 
   // Filter movies by search
   const filteredMovies = movies.filter(m =>
@@ -217,6 +229,35 @@ export default function AdminPanel({
     setShowChangelogForm(true)
   }
 
+  // Handle editing user
+  const startEditUser = (user) => {
+    setEditingUser(user)
+    setUserForm({ name: user.name, avatar: user.avatar })
+  }
+
+  const handleUserUpdate = async () => {
+    if (!editingUser || !userForm.name.trim()) return
+    setLoading(true)
+    try {
+      await onEditUser(editingUser.id, {
+        name: userForm.name.trim(),
+        avatar: userForm.avatar
+      })
+      setEditingUser(null)
+      setUserForm({ name: '', avatar: null })
+    } catch (err) {
+      console.error('Error updating user:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Get collection owner name
+  const getCollectionOwner = (collection) => {
+    const owner = users.find(u => u.auth_id === collection.user_id)
+    return owner?.name || 'Unknown'
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-backdrop modal-safe-area">
       <div className={`${card} rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content`}>
@@ -255,6 +296,63 @@ export default function AdminPanel({
           {/* Users Tab */}
           {activeTab === 'Users' && (
             <div className="space-y-2">
+              {/* User Edit Form */}
+              {editingUser && (
+                <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <h3 className="font-medium mb-3">Edit User: {editingUser.name}</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={userForm.name}
+                        onChange={(e) => setUserForm(prev => ({ ...prev, name: e.target.value }))}
+                        className={`w-full px-3 py-2 rounded border ${input}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1">Avatar</label>
+                      <div className="flex items-center gap-3">
+                        <Avatar avatar={userForm.avatar} size="md" />
+                        <button
+                          onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                          className="px-3 py-1 text-sm rounded bg-gray-600 hover:bg-gray-500"
+                        >
+                          Change Avatar
+                        </button>
+                      </div>
+                      {showAvatarPicker && (
+                        <div className="mt-2">
+                          <AvatarPicker
+                            value={userForm.avatar}
+                            onChange={(avatar) => {
+                              setUserForm(prev => ({ ...prev, avatar }))
+                              setShowAvatarPicker(false)
+                            }}
+                            darkMode={darkMode}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setEditingUser(null); setShowAvatarPicker(false) }}
+                        className="flex-1 px-3 py-2 rounded bg-gray-600 hover:bg-gray-500"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleUserUpdate}
+                        disabled={loading || !userForm.name.trim()}
+                        className="flex-1 px-3 py-2 rounded bg-purple-600 hover:bg-purple-500 disabled:opacity-50"
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {users.map(user => (
                 <div
                   key={user.id}
@@ -279,6 +377,12 @@ export default function AdminPanel({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEditUser(user)}
+                      className="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-500"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => onToggleUserAdmin(user.id, !user.is_admin)}
                       className={`px-3 py-1 text-sm rounded ${
@@ -340,10 +444,56 @@ export default function AdminPanel({
                         </div>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onEditMovie(movie)}
+                        className="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-500"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete "${movie.title}"? This cannot be undone.`)) {
+                            onDeleteMovie(movie.id)
+                          }
+                        }}
+                        className="px-3 py-1 text-sm rounded bg-red-600 hover:bg-red-500"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Collections Tab */}
+          {activeTab === 'Collections' && (
+            <div className="space-y-2">
+              {collections.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">No collections found</p>
+              ) : (
+                collections.map(collection => (
+                  <div
+                    key={collection.id}
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      darkMode ? 'bg-gray-700/50' : 'bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{collection.emoji || '📁'}</span>
+                      <div>
+                        <div className="font-medium">{collection.name}</div>
+                        <div className="text-xs text-gray-400">
+                          Owner: {getCollectionOwner(collection)} • Created {formatDate(collection.created_at)}
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => {
-                        if (confirm(`Delete "${movie.title}"? This cannot be undone.`)) {
-                          onDeleteMovie(movie.id)
+                        if (confirm(`Delete collection "${collection.name}"? This cannot be undone.`)) {
+                          onDeleteCollection(collection.id)
                         }
                       }}
                       className="px-3 py-1 text-sm rounded bg-red-600 hover:bg-red-500"
@@ -351,8 +501,8 @@ export default function AdminPanel({
                       Delete
                     </button>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </div>
           )}
 

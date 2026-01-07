@@ -6,6 +6,7 @@ export default function InvitesModal({
   invites = [],
   onAccept,
   onDecline,
+  onDelete,
   onClose,
   darkMode,
   users = []
@@ -42,6 +43,19 @@ export default function InvitesModal({
       addToast('Invite declined', 'info')
     } catch (err) {
       addToast('Failed to decline invite', 'error')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleDelete = async (inviteId) => {
+    if (!onDelete) return
+    setProcessingId(inviteId)
+    try {
+      await onDelete(inviteId)
+      addToast('Invite removed', 'success')
+    } catch (err) {
+      addToast('Failed to remove invite', 'error')
     } finally {
       setProcessingId(null)
     }
@@ -222,6 +236,7 @@ export default function InvitesModal({
               <div className="mt-3 space-y-2">
                 {pastInvites.slice(0, 10).map(invite => {
                   const inviter = getInviterInfo(invite)
+                  const isProcessing = processingId === invite.id
                   return (
                     <div
                       key={invite.id}
@@ -236,6 +251,16 @@ export default function InvitesModal({
                           From {inviter.name} • {formatDate(invite.responded_at || invite.created_at)}
                         </p>
                       </div>
+                      {onDelete && (
+                        <button
+                          onClick={() => handleDelete(invite.id)}
+                          disabled={isProcessing}
+                          className="p-1.5 rounded hover:bg-red-600/30 text-red-400 text-sm disabled:opacity-50"
+                          title="Remove from history"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   )
                 })}
