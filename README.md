@@ -449,6 +449,15 @@ Submit a bug report in the app - you should receive an email!
 
 ## Recent Updates (Jan 2026)
 
+### Enhanced Admin Statistics
+- **Admin-Only Access**: Statistics button now only visible to admin users
+- **6 Tabbed Interface**: Overview, Users, Voting, Invites, Activity, Collections
+- **User Activity Leaderboard**: See who's most active with movies added, sessions created/participated
+- **Voting Stats**: Total sessions, completion rate, average participants, most picked movies
+- **Invite Analytics**: Accept/decline rates overall and per-user
+- **Time-Based Trends**: This week/month activity, day-of-week distribution chart
+- **Collections Overview**: Total/shared/private counts, largest collections
+
 ### Simplified UI: Removed Redundant Features
 - **Favorites Removed**: Global favorites didn't fit the per-user model - ratings serve this purpose better
 - **Movie of the Week Removed**: Redundant with Spin Wheel (random pick) and Voting Sessions (group decisions)
