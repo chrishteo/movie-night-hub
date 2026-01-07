@@ -14,6 +14,7 @@ export default function BottomNav({
   onShowInvites,
   invitePendingCount = 0,
   sessionInviteCount = 0,
+  isAdmin = false,
   darkMode
 }) {
   const bg = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
@@ -116,13 +117,15 @@ export default function BottomNav({
           <span className="text-xl">🔗</span>
           <span className="text-xs mt-0.5">Share</span>
         </button>
-        <button
-          onClick={onShowStats}
-          className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-indigo-500 active:bg-indigo-500/20 transition-colors"
-        >
-          <span className="text-xl">📊</span>
-          <span className="text-xs mt-0.5">Stats</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onShowStats}
+            className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-indigo-500 active:bg-indigo-500/20 transition-colors"
+          >
+            <span className="text-xl">📊</span>
+            <span className="text-xs mt-0.5">Stats</span>
+          </button>
+        )}
       </div>
     </nav>
   )

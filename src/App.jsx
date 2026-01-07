@@ -713,12 +713,14 @@ export default function App() {
         >
           🔗
         </button>
-        <button
-          onClick={() => setShowStats(true)}
-          className="px-3 py-1.5 rounded text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          📊
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setShowStats(true)}
+            className="px-3 py-1.5 rounded text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            📊
+          </button>
+        )}
         <button
           onClick={() => setShowTrending(true)}
           className="px-3 py-1.5 rounded text-sm bg-red-600 hover:bg-red-700 text-white"
@@ -1133,6 +1135,7 @@ export default function App() {
         onShowInvites={() => setShowInvites(true)}
         invitePendingCount={invitePendingCount}
         sessionInviteCount={sessionInvites.filter(i => i.status === 'invited').length}
+        isAdmin={isAdmin}
         darkMode={darkMode}
       />
 
