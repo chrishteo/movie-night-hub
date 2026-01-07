@@ -1072,6 +1072,9 @@ export default function App() {
       {showStats && (
         <StatsModal
           movies={movies}
+          users={users}
+          votingSessions={allVotingSessions}
+          invites={invites}
           onClose={() => setShowStats(false)}
           darkMode={darkMode}
         />
