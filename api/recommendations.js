@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     console.log('Recommendations request from:', user.email)
   }
 
-  const { movies } = req.body
+  const { movies, seedMovie } = req.body
 
   if (!movies || !Array.isArray(movies)) {
     return res.status(400).json({ error: 'Movies array is required' })
@@ -48,11 +48,53 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Anthropic API key not configured' })
   }
 
-  // Limit to 15 movies and use concise format to reduce tokens
-  const limitedMovies = movies.slice(0, 15);
-  const movieList = limitedMovies.map(m =>
-    `${m.title}${m.genre ? ` (${m.genre})` : ''}${m.favorite ? ' ★' : ''}`
-  ).join(', ');
+  // Sort movies by preference: favorites first, then by rating, then unwatched
+  const sortedMovies = [...movies].sort((a, b) => {
+    // Favorites first
+    if (a.favorite && !b.favorite) return -1;
+    if (!a.favorite && b.favorite) return 1;
+    // Then by rating (higher first)
+    const ratingA = a.rating || 0;
+    const ratingB = b.rating || 0;
+    if (ratingA !== ratingB) return ratingB - ratingA;
+    // Then unwatched (to understand what they want to see)
+    if (!a.watched && b.watched) return -1;
+    if (a.watched && !b.watched) return 1;
+    return 0;
+  });
+
+  // Limit to 15 movies with better context
+  const limitedMovies = sortedMovies.slice(0, 15);
+  const movieList = limitedMovies.map(m => {
+    let info = m.title;
+    if (m.genre) info += ` (${m.genre})`;
+    if (m.favorite) info += ' [favorite]';
+    if (m.rating >= 4) info += ` [rated ${m.rating}/5]`;
+    if (m.watched) info += ' [watched]';
+    return info;
+  }).join(', ');
+
+  // Build prompt based on whether we have a seed movie or not
+  let prompt;
+  if (seedMovie) {
+    // "More like this" mode - focus on the specific movie
+    prompt = `I really liked the movie "${seedMovie.title}"${seedMovie.year ? ` (${seedMovie.year})` : ''}${seedMovie.genre ? `, genre: ${seedMovie.genre}` : ''}${seedMovie.mood ? `, mood: ${seedMovie.mood}` : ''}.
+
+Recommend 5 similar movies that share its style, themes, or vibe. Return ONLY JSON array:
+[{"title":"Movie","director":"Name","year":2020,"genre":"${GENRES[0]}","mood":"${MOODS[0]}","reason":"Brief reason why it's similar"}]
+
+Use genres: ${GENRES.join('/')}
+Use moods: ${MOODS.join('/')}`;
+  } else {
+    // General recommendations based on collection
+    prompt = `My movie collection (favorites and highly-rated first): ${movieList}
+
+Recommend 5 movies I'd enjoy based on my taste. Return ONLY JSON array:
+[{"title":"Movie","director":"Name","year":2020,"genre":"${GENRES[0]}","mood":"${MOODS[0]}","reason":"Brief reason based on my preferences"}]
+
+Use genres: ${GENRES.join('/')}
+Use moods: ${MOODS.join('/')}`;
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -68,13 +110,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'user',
-            content: `Movies I like: ${movieList}
-
-Recommend 5 similar movies. Return ONLY JSON array:
-[{"title":"Movie","director":"Name","year":2020,"genre":"${GENRES[0]}","mood":"${MOODS[0]}","reason":"Why"}]
-
-Use genres: ${GENRES.join('/')}
-Use moods: ${MOODS.join('/')}`
+            content: prompt
           }
         ]
       })

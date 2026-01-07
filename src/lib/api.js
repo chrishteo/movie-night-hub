@@ -104,13 +104,13 @@ export async function checkAIStatus() {
   return { ai_available: true, remaining_seconds: 0 }
 }
 
-export async function getRecommendations(movies) {
+export async function getRecommendations(movies, seedMovie = null) {
   const response = await fetch('/api/recommendations', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ movies })
+    body: JSON.stringify({ movies, seedMovie })
   })
 
   if (!response.ok) {

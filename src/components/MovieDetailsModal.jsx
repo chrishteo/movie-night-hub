@@ -29,7 +29,8 @@ export default function MovieDetailsModal({
   users = [],
   averageRating,
   ratingCount = 0,
-  watchedCount = 0
+  watchedCount = 0,
+  onMoreLikeThis = null // Callback to open AI recommendations with this movie as seed
 }) {
   const { addToast } = useToast()
   const [similarMovies, setSimilarMovies] = useState([])
@@ -319,15 +320,29 @@ export default function MovieDetailsModal({
             </button>
           </div>
 
-          <button
-            onClick={() => {
-              onEdit(movie)
-              onClose()
-            }}
-            className="w-full px-4 py-2 rounded bg-purple-600 hover:bg-purple-700"
-          >
-            ✏️ Edit Movie
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                onEdit(movie)
+                onClose()
+              }}
+              className="flex-1 px-4 py-2 rounded bg-purple-600 hover:bg-purple-700"
+            >
+              ✏️ Edit Movie
+            </button>
+            {onMoreLikeThis && (
+              <button
+                onClick={() => {
+                  onMoreLikeThis(movie)
+                  onClose()
+                }}
+                className="flex-1 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700"
+                title="Get AI-powered movie recommendations based on this movie"
+              >
+                🎯 More Like This
+              </button>
+            )}
+          </div>
 
           {/* Similar Movies */}
           <div className={`pt-4 border-t ${border}`}>

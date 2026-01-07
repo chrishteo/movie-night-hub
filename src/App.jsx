@@ -200,6 +200,7 @@ export default function App() {
   const [showVotingSessions, setShowVotingSessions] = useState(false)
   const [currentVotingSession, setCurrentVotingSession] = useState(null)
   const [showRecs, setShowRecs] = useState(false)
+  const [seedMovie, setSeedMovie] = useState(null) // For "More like this" feature
   const [showHistory, setShowHistory] = useState(false)
   const [showMOTW, setShowMOTW] = useState(false)
   const [showShare, setShowShare] = useState(false)
@@ -987,6 +988,10 @@ export default function App() {
           averageRating={getAverageRating(selectedMovie.id)}
           ratingCount={getRatingCount(selectedMovie.id)}
           watchedCount={getWatchedCount(selectedMovie.id)}
+          onMoreLikeThis={(movie) => {
+            setSeedMovie(movie)
+            setShowRecs(true)
+          }}
         />
       )}
 
@@ -1075,8 +1080,12 @@ export default function App() {
           movies={movies}
           currentUser={currentUser}
           onAddMovie={addMovie}
-          onClose={() => setShowRecs(false)}
+          onClose={() => {
+            setShowRecs(false)
+            setSeedMovie(null)
+          }}
           darkMode={darkMode}
+          seedMovie={seedMovie}
         />
       )}
 

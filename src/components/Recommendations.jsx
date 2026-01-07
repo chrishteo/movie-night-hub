@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getRecommendations } from '../lib/api'
 import Modal from './Modal'
 
@@ -7,19 +7,33 @@ export default function Recommendations({
   currentUser,
   onAddMovie,
   onClose,
-  darkMode
+  darkMode,
+  seedMovie = null // Optional: for "More like this" feature
 }) {
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [addedTitles, setAddedTitles] = useState([]) // Track what user added this session
+
+  // Get all movie titles in collection (normalized for comparison)
+  const collectionTitles = useMemo(() => {
+    return movies.map(m => m.title.toLowerCase().trim())
+  }, [movies])
 
   const fetchRecommendations = async () => {
     setLoading(true)
     setError('')
 
     try {
-      const recs = await getRecommendations(movies)
-      setRecommendations(recs)
+      const recs = await getRecommendations(movies, seedMovie)
+
+      // Filter out movies already in collection
+      const filtered = recs.filter(rec => {
+        const recTitle = rec.title.toLowerCase().trim()
+        return !collectionTitles.includes(recTitle)
+      })
+
+      setRecommendations(filtered)
     } catch (err) {
       setError(err.message || 'Failed to get recommendations')
     } finally {
@@ -29,7 +43,7 @@ export default function Recommendations({
 
   useEffect(() => {
     fetchRecommendations()
-  }, [])
+  }, [seedMovie])
 
   const handleAddRecommendation = async (rec) => {
     try {
@@ -47,10 +61,17 @@ export default function Recommendations({
         added_by: currentUser,
         notes: rec.reason || ''
       })
+      // Track added movies to hide them from the list
+      setAddedTitles(prev => [...prev, rec.title.toLowerCase().trim()])
     } catch (err) {
       console.error('Failed to add recommendation:', err)
     }
   }
+
+  // Filter out movies added this session
+  const visibleRecommendations = recommendations.filter(
+    rec => !addedTitles.includes(rec.title.toLowerCase().trim())
+  )
 
   const card = darkMode ? 'bg-gray-800' : 'bg-white'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
@@ -58,12 +79,22 @@ export default function Recommendations({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-auto modal-safe-area">
       <div className={`${card} rounded-lg p-4 w-full max-w-lg max-h-[90vh] overflow-auto`}>
-        <h2 className="text-lg font-bold mb-4">💡 AI Recommendations</h2>
+        <h2 className="text-lg font-bold mb-1">
+          {seedMovie ? '🎯 More Like This' : '💡 AI Recommendations'}
+        </h2>
+        {seedMovie && (
+          <p className="text-sm text-purple-400 mb-4">
+            Based on: {seedMovie.title}
+          </p>
+        )}
+        {!seedMovie && <div className="mb-4" />}
 
         {loading && (
           <div className="text-center py-8">
             <div className="animate-spin text-3xl">🎬</div>
-            <p className="mt-2 opacity-70">Analyzing your collection...</p>
+            <p className="mt-2 opacity-70">
+              {seedMovie ? `Finding movies like ${seedMovie.title}...` : 'Analyzing your collection...'}
+            </p>
           </div>
         )}
 
@@ -73,14 +104,16 @@ export default function Recommendations({
           </div>
         )}
 
-        {!loading && !error && recommendations.length === 0 && (
+        {!loading && !error && visibleRecommendations.length === 0 && (
           <p className="text-center py-8 opacity-50">
-            No recommendations available
+            {addedTitles.length > 0
+              ? 'All recommendations added! Click Refresh for more.'
+              : 'No recommendations available'}
           </p>
         )}
 
         <div className="space-y-2">
-          {recommendations.map((rec, i) => (
+          {visibleRecommendations.map((rec, i) => (
             <div key={i} className={`p-2 rounded border ${border} flex gap-2`}>
               {rec.poster ? (
                 <img
