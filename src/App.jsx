@@ -44,6 +44,7 @@ import AnnouncementBanner from './components/AnnouncementBanner'
 import GuidedTour from './components/GuidedTour'
 import WhatsNewModal from './components/WhatsNewModal'
 import InvitesModal from './components/InvitesModal'
+import ImportModal from './components/ImportModal'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -226,6 +227,7 @@ export default function App() {
   const [showBugReport, setShowBugReport] = useState(false)
   const [showMyBugReports, setShowMyBugReports] = useState(false)
   const [showWhatsNew, setShowWhatsNew] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [hasCheckedChangelog, setHasCheckedChangelog] = useState(false)
   const [adminCollections, setAdminCollections] = useState([])
 
@@ -901,6 +903,13 @@ export default function App() {
           + Add
         </button>
         <button
+          onClick={() => setShowImport(true)}
+          className="px-3 py-1.5 rounded text-sm bg-violet-600 hover:bg-violet-700 text-white"
+          title="Import from IMDB"
+        >
+          📥 Import
+        </button>
+        <button
           onClick={() => setShowWheel(true)}
           className="px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700 text-white"
           data-tour="spin-wheel"
@@ -1142,6 +1151,20 @@ export default function App() {
           title="Add Movie"
           isEdit={false}
           darkMode={darkMode}
+        />
+      )}
+
+      {showImport && (
+        <ImportModal
+          onClose={() => setShowImport(false)}
+          onImport={async (movieData) => {
+            await addMovie({
+              ...movieData,
+              added_by: currentUser
+            })
+          }}
+          darkMode={darkMode}
+          existingMovies={movies}
         />
       )}
 

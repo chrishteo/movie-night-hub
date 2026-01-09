@@ -104,6 +104,24 @@ export async function checkAIStatus() {
   return { ai_available: true, remaining_seconds: 0 }
 }
 
+// Lookup movies by IMDB IDs (for import)
+export async function lookupIMDBMovies(imdbIds) {
+  const response = await fetch('/api/lookup-imdb', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ imdbIds })
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to lookup movies')
+  }
+
+  return response.json()
+}
+
 export async function getRecommendations(movies, seedMovie = null) {
   const response = await fetch('/api/recommendations', {
     method: 'POST',
