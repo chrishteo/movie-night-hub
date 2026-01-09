@@ -3,7 +3,7 @@ import { Avatar } from './AvatarPicker'
 import AvatarPicker from './AvatarPicker'
 import ConfirmDialog from './ConfirmDialog'
 import { formatDate } from '../utils/helpers'
-import { getMovieNights, deleteMovieNight } from '../lib/database'
+import { getMovieNights, deleteMovieNight, getAllMovies } from '../lib/database'
 
 const SIDEBAR_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
@@ -39,9 +39,6 @@ const CHANGELOG_TYPES = [
 
 export default function AdminDashboard({
   users,
-  movies,
-  totalMovies: totalMoviesProp,
-  onLoadAllMovies,
   currentUserId,
   authUserId,
   votingSessions = [],
@@ -81,6 +78,10 @@ export default function AdminDashboard({
   const [scheduledEvents, setScheduledEvents] = useState([])
   const [eventsLoading, setEventsLoading] = useState(true)
 
+  // Movies state - fetch all movies independently for admin
+  const [movies, setMovies] = useState([])
+  const [moviesLoading, setMoviesLoading] = useState(true)
+
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null })
 
@@ -113,6 +114,7 @@ export default function AdminDashboard({
     onFetchChangelog()
     if (onFetchCollections) onFetchCollections()
     fetchScheduledEvents()
+    fetchAllMovies()
   }, [])
 
   const fetchScheduledEvents = async () => {
@@ -127,18 +129,23 @@ export default function AdminDashboard({
     }
   }
 
-  // Load all movies when viewing Movies section
-  useEffect(() => {
-    if (activeSection === 'movies' && onLoadAllMovies) {
-      onLoadAllMovies()
+  const fetchAllMovies = async () => {
+    try {
+      setMoviesLoading(true)
+      const data = await getAllMovies()
+      setMovies(data || [])
+    } catch (err) {
+      console.error('Error fetching movies:', err)
+    } finally {
+      setMoviesLoading(false)
     }
-  }, [activeSection, onLoadAllMovies])
+  }
 
-  // Stats calculations - use totalMoviesProp for accurate count
+  // Stats calculations
   const stats = {
     totalUsers: users.length,
     adminUsers: users.filter(u => u.is_admin).length,
-    totalMovies: totalMoviesProp || movies.length,
+    totalMovies: movies.length,
     watchedMovies: movies.filter(m => m.watched).length,
     activeSessions: votingSessions.filter(s => s.status === 'active').length,
     upcomingEvents: scheduledEvents.filter(e => new Date(e.scheduled_date) >= new Date() && !e.completed).length,

@@ -86,17 +86,12 @@ export default function App() {
   } = useUsers(user)
 
   // Server-side filters for pagination to work correctly
-  // Don't apply filters when admin is viewing the admin dashboard
   const serverFilters = useMemo(() => {
-    // Admin viewing dashboard should see all movies
-    if (isAdmin && !adminViewAsUser) {
-      return {}
-    }
     if (filters.view === 'mine' && currentUser) {
       return { addedBy: currentUser }
     }
     return {}
-  }, [filters.view, currentUser, isAdmin, adminViewAsUser])
+  }, [filters.view, currentUser])
 
   const {
     movies,
@@ -422,9 +417,6 @@ export default function App() {
       <>
         <AdminDashboard
           users={users}
-          movies={movies}
-          totalMovies={total}
-          onLoadAllMovies={loadAll}
           currentUserId={users.find(u => u.name === currentUser)?.id}
           authUserId={authUserId}
           votingSessions={allVotingSessions}
