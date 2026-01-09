@@ -51,12 +51,19 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 - **Delete Voting Sessions**: Creator or admin can delete voting session history
 
 ### Onboarding
-- **Guided Tour**: 7-step interactive tutorial for new users
-  - Auto-triggers on first visit
+- **Welcome Screen**: First-time users see a welcome modal explaining the app
+  - 4 key features highlighted with icons
+  - Option to "Take the Tour" or "Skip for Now"
+- **Guided Tour**: 8-step interactive tutorial
+  - Covers: Add Movies, Movie Cards, Filters, Spin Wheel, Voting, Profile Menu
   - Spotlight effect highlights UI elements
+  - Mobile-optimized with visual viewport support
   - Keyboard navigation (arrows, Enter, Escape)
-  - Re-watchable from user menu
-- **Tooltip Hints**: `?` icons with explanations on key features
+  - Re-watchable from profile menu
+- **Guidebook**: Comprehensive reference accessible from profile menu
+  - **Buttons tab**: All 12 action buttons explained
+  - **Filters tab**: 8 filter/view options documented
+  - **Features tab**: 8 main features with detailed descriptions
 
 ### Email Notifications (Admin)
 - **Resend Integration**: Email notifications via Supabase Edge Functions
@@ -455,10 +462,11 @@ Submit a bug report in the app - you should receive an email!
 - For test domain (`onboarding@resend.dev`), `ADMIN_EMAIL` must match your Resend account email
 - Check Edge Function logs in Supabase for errors
 
-### Tutorial Not Showing
+### Tutorial/Welcome Not Showing
 
-- Clear `movienight-tutorial-completed` from localStorage to re-trigger
-- Or click profile dropdown → "View Tutorial"
+- Clear `movienight-welcome-seen` and `movienight-tutorial-completed` from localStorage to re-trigger
+- Or click profile dropdown → "View Tutorial" to restart the tour
+- Click profile dropdown → "Guidebook" for the feature reference anytime
 
 ---
 
@@ -592,10 +600,12 @@ Submit a bug report in the app - you should receive an email!
 - Tutorial tooltip no longer overlaps bottom nav buttons
 - Improved touch targets and scrolling
 
-### Guided Tour
-- Interactive 7-step tutorial for new users
-- Spotlight effect, keyboard navigation
-- Tooltip hints on key features
+### Guided Tour & Onboarding
+- **Welcome Screen**: New first-time user welcome modal explaining what the app does
+- **8-step Guided Tour**: Now includes profile menu step showing where to find settings
+- **Guidebook**: New comprehensive reference modal with 3 tabs (Buttons, Filters, Features)
+- **Mobile Improvements**: Visual viewport support for iOS Safari, scroll-into-view for better highlighting
+- Accessible from profile menu → "View Tutorial" or "Guidebook"
 
 ### Email Notifications
 - Admin receives emails for new users, profile changes, bug reports

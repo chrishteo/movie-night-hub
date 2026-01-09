@@ -42,6 +42,8 @@ import BugReportModal from './components/BugReportModal'
 import MyBugReports from './components/MyBugReports'
 import AnnouncementBanner from './components/AnnouncementBanner'
 import GuidedTour from './components/GuidedTour'
+import WelcomeModal from './components/WelcomeModal'
+import GuidebookModal from './components/GuidebookModal'
 import WhatsNewModal from './components/WhatsNewModal'
 import InvitesModal from './components/InvitesModal'
 import ImportModal from './components/ImportModal'
@@ -188,9 +190,14 @@ export default function App() {
   // Tutorial state
   const {
     showTour,
+    showWelcome,
+    showGuidebook,
     completeTutorial,
+    completeWelcome,
     skipTour,
-    startTour
+    startTour,
+    openGuidebook,
+    closeGuidebook
   } = useTutorial()
 
   // View mode: 'grid' or 'list'
@@ -818,6 +825,7 @@ export default function App() {
         onOpenMyBugReports={() => setShowMyBugReports(true)}
         onStartTutorial={startTour}
         onOpenWhatsNew={() => setShowWhatsNew(true)}
+        onOpenGuidebook={openGuidebook}
       />
 
       {/* Bulk Action Bar */}
@@ -1573,11 +1581,28 @@ export default function App() {
       {/* PWA Install Prompt */}
       <InstallPrompt darkMode={darkMode} />
 
+      {/* Welcome Modal - shown first for new users */}
+      {showWelcome && (
+        <WelcomeModal
+          onStartTour={() => completeWelcome(true)}
+          onSkip={() => completeWelcome(false)}
+          darkMode={darkMode}
+        />
+      )}
+
       {/* Guided Tour */}
       {showTour && (
         <GuidedTour
           onComplete={completeTutorial}
           onSkip={skipTour}
+          darkMode={darkMode}
+        />
+      )}
+
+      {/* Guidebook Modal */}
+      {showGuidebook && (
+        <GuidebookModal
+          onClose={closeGuidebook}
           darkMode={darkMode}
         />
       )}

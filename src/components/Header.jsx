@@ -17,7 +17,8 @@ export default function Header({
   onOpenBugReport,
   onOpenMyBugReports,
   onStartTutorial,
-  onOpenWhatsNew
+  onOpenWhatsNew,
+  onOpenGuidebook
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [editingAvatar, setEditingAvatar] = useState(false)
@@ -69,6 +70,7 @@ export default function Header({
           <button
             ref={buttonRef}
             onClick={() => setShowUserMenu(!showUserMenu)}
+            data-tour="profile-menu"
             className={`flex items-center gap-2 px-2 py-1 rounded border ${
               darkMode
                 ? 'bg-gray-800 border-gray-700 hover:border-purple-500'
@@ -151,8 +153,18 @@ export default function Header({
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20"
                   >
-                    <span>📖</span>
+                    <span>🎓</span>
                     <span>View Tutorial</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onOpenGuidebook?.()
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-sm hover:bg-purple-500/20"
+                  >
+                    <span>📖</span>
+                    <span>Guidebook</span>
                   </button>
                   <button
                     onClick={() => {

@@ -51,9 +51,16 @@ const TOUR_STEPS = [
     icon: '🗳️'
   },
   {
+    target: '[data-tour="profile-menu"]',
+    title: 'Your Profile Menu',
+    description: 'Click here to access your profile settings, the Guidebook, What\'s New, bug reports, and more. This is your hub for app settings!',
+    position: 'bottom',
+    icon: '👤'
+  },
+  {
     target: null,
     title: 'You\'re All Set!',
-    description: 'That\'s the basics! Look for the ? icons around the app for more tips. Enjoy your movie nights!',
+    description: 'That\'s the basics! Open the Guidebook anytime from your profile menu for a complete reference of all features. Enjoy your movie nights!',
     icon: '🎉'
   }
 ]
@@ -84,29 +91,62 @@ export default function GuidedTour({ onComplete, onSkip, darkMode }) {
       return
     }
 
+    const measureElement = (element) => {
+      const rect = element.getBoundingClientRect()
+
+      // On mobile, account for visual viewport offset (iOS Safari)
+      const visualViewport = window.visualViewport
+      const offsetTop = visualViewport ? visualViewport.offsetTop : 0
+      const offsetLeft = visualViewport ? visualViewport.offsetLeft : 0
+
+      setTargetRect({
+        top: rect.top + offsetTop,
+        left: rect.left + offsetLeft,
+        width: rect.width,
+        height: rect.height
+      })
+    }
+
     const findTarget = () => {
       const element = document.querySelector(targetSelector)
       if (element) {
-        const rect = element.getBoundingClientRect()
-        setTargetRect({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        })
+        measureElement(element)
       } else {
         setTargetRect(null)
       }
     }
 
-    findTarget()
+    // Initial find with scroll into view on mobile
+    const element = document.querySelector(targetSelector)
+    if (element) {
+      if (isMobile) {
+        // Scroll element into view first, then measure after scroll settles
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => measureElement(element), 350)
+      } else {
+        measureElement(element)
+      }
+    } else {
+      setTargetRect(null)
+    }
+
     // Re-calculate on scroll/resize
     window.addEventListener('scroll', findTarget, true)
     window.addEventListener('resize', findTarget)
 
+    // Also listen to visual viewport changes (iOS Safari)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', findTarget)
+      window.visualViewport.addEventListener('scroll', findTarget)
+    }
+
     return () => {
       window.removeEventListener('scroll', findTarget, true)
       window.removeEventListener('resize', findTarget)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', findTarget)
+        window.visualViewport.removeEventListener('scroll', findTarget)
+      }
     }
   }, [currentStep, step.target, step.mobileTarget, isMobile])
 
