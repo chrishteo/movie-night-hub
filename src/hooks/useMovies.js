@@ -15,14 +15,17 @@ export function useMovies(authUserId = null, serverFilters = {}) {
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(false)
   const [total, setTotal] = useState(0)
+  const [allLoaded, setAllLoaded] = useState(false)
   const pageRef = useRef(0)
   const filtersRef = useRef(serverFilters)
+  const loadingAllRef = useRef(false)
 
   const fetchMovies = useCallback(async (reset = true, filters = filtersRef.current) => {
     try {
       if (reset) {
         setLoading(true)
         pageRef.current = 0
+        setAllLoaded(false)
       } else {
         setLoadingMore(true)
       }
@@ -37,6 +40,9 @@ export function useMovies(authUserId = null, serverFilters = {}) {
 
       setHasMore(result.hasMore)
       setTotal(result.total)
+      if (!result.hasMore) {
+        setAllLoaded(true)
+      }
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -52,6 +58,31 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     pageRef.current += 1
     await fetchMovies(false)
   }, [fetchMovies, loadingMore, hasMore])
+
+  // Load all remaining pages (used when filters are applied)
+  const loadAll = useCallback(async () => {
+    if (loadingAllRef.current || allLoaded) return
+    loadingAllRef.current = true
+    setLoadingMore(true)
+
+    try {
+      let currentHasMore = hasMore
+      while (currentHasMore) {
+        pageRef.current += 1
+        const result = await getMovies(pageRef.current, filtersRef.current)
+        setMovies(prev => [...prev, ...result.movies])
+        currentHasMore = result.hasMore
+        setHasMore(result.hasMore)
+      }
+      setAllLoaded(true)
+    } catch (err) {
+      setError(err.message)
+      console.error('Error loading all movies:', err)
+    } finally {
+      setLoadingMore(false)
+      loadingAllRef.current = false
+    }
+  }, [hasMore, allLoaded])
 
   // Refetch when server filters change
   useEffect(() => {
@@ -191,11 +222,13 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     error,
     hasMore,
     total,
+    allLoaded,
     addMovie,
     updateMovie,
     deleteMovie,
     toggleWatched,
     loadMore,
+    loadAll,
     refetch: fetchMovies,
     canModifyMovie,
     authUserId

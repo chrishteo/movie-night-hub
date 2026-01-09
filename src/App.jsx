@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { useMovies } from './hooks/useMovies'
 import { getCollections, deleteCollection, updateUser } from './lib/database'
@@ -65,6 +65,9 @@ export default function App() {
     sortBy: 'created_at'
   })
 
+  // Ref for infinite scroll sentinel (must be before any conditional returns)
+  const scrollSentinelRef = useRef(null)
+
   // Data hooks - must be called unconditionally
   // Pass auth user ID for RLS security
   const authUserId = user?.id || null
@@ -94,11 +97,13 @@ export default function App() {
     loadingMore,
     hasMore,
     total,
+    allLoaded,
     addMovie,
     updateMovie,
     deleteMovie,
     toggleWatched,
     loadMore,
+    loadAll,
     canModifyMovie
   } = useMovies(authUserId, serverFilters)
 
@@ -348,6 +353,40 @@ export default function App() {
       localStorage.setItem('movienight-changelog-seen', new Date(changelog[0].created_at).getTime().toString())
     }
   }
+
+  // Check if any client-side filters are active (for infinite scroll logic)
+  const hasClientFilters = !!(filters.search || filters.genre || filters.mood || filters.streaming || filters.addedBy || filters.watched !== 'all')
+
+  // Load all movies when client-side filters are applied
+  // Only run after initial load is complete (moviesLoading = false)
+  useEffect(() => {
+    if (hasClientFilters && !allLoaded && !moviesLoading) {
+      loadAll()
+    }
+  }, [hasClientFilters, allLoaded, moviesLoading, loadAll])
+
+  // Infinite scroll: load more when sentinel becomes visible
+  const loadingMoreRef = useRef(false)
+  loadingMoreRef.current = loadingMore
+
+  useEffect(() => {
+    if (hasClientFilters || !hasMore) return
+
+    const sentinel = scrollSentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMoreRef.current) {
+          loadMore()
+        }
+      },
+      { rootMargin: '100px' }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasClientFilters, hasMore, loadMore])
 
   // Show loading screen while checking auth
   if (authLoading) {
@@ -925,31 +964,27 @@ export default function App() {
       />
       </div>
 
-      {/* Load More Button */}
-      {hasMore && !moviesLoading && (
-        <div className="flex justify-center py-8">
-          <button
-            onClick={loadMore}
-            disabled={loadingMore}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              darkMode
-                ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-            } ${loadingMore ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loadingMore ? (
-              <span className="flex items-center gap-2">
+      {/* Infinite scroll sentinel and loading indicator */}
+      {!moviesLoading && (
+        <>
+          {/* Scroll sentinel for infinite scroll - only when no client filters */}
+          {!hasClientFilters && hasMore && (
+            <div ref={scrollSentinelRef} className="h-1" />
+          )}
+
+          {/* Loading indicator */}
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <span className="flex items-center gap-2 text-gray-400">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Loading...
+                Loading more movies...
               </span>
-            ) : (
-              `Load More (${movies.length} of ${total})`
-            )}
-          </button>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modals */}

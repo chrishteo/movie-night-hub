@@ -62,7 +62,8 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}, allU
       const directorMatch = m.director?.toLowerCase().includes(searchLower)
       if (!titleMatch && !directorMatch) return false
     }
-    if (filters.view === 'mine' && m.added_by !== currentUser) return false
+    // Only filter by "mine" if currentUser is set to avoid filtering out all movies during initial load
+    if (filters.view === 'mine' && currentUser && m.added_by !== currentUser) return false
     if (filters.addedBy && m.added_by !== filters.addedBy) return false
     if (filters.genre && m.genre !== filters.genre) return false
     if (filters.mood && m.mood !== filters.mood) return false
