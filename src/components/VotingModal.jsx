@@ -331,18 +331,6 @@ export default function VotingModal({
                   End Session
                 </button>
               )}
-              <button
-                onClick={() => {
-                  // Reset to voting view (allow re-voting or changing votes)
-                  setWinnerMovie(null)
-                  setVotingPhase('voting')
-                  setRunoffMovies([])
-                  setRunoffRound(0)
-                }}
-                className="w-full px-6 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white text-sm"
-              >
-                Continue Voting
-              </button>
               {/* Leave button for non-creator participants */}
               {!isCreator && hasAccepted && (
                 <button

@@ -76,6 +76,9 @@ export default function VotingSessionList({
   const handleCreatorMoviePicks = async (movieIds) => {
     if (pendingSession && onAcceptWithMovies) {
       await onAcceptWithMovies(pendingSession.id, movieIds)
+
+      // Automatically open the session after creating
+      onOpenSession(pendingSession)
     }
     setShowMoviePicker(false)
     setPendingSession(null)
@@ -91,6 +94,11 @@ export default function VotingSessionList({
   const handleAcceptWithMovies = async (movieIds) => {
     if (pendingInviteSession && onAcceptWithMovies) {
       await onAcceptWithMovies(pendingInviteSession.session_id, movieIds)
+
+      // Automatically open the session after accepting
+      if (pendingInviteSession.session) {
+        onOpenSession(pendingInviteSession.session)
+      }
     }
     setShowMoviePicker(false)
     setPendingInviteSession(null)
