@@ -540,7 +540,8 @@ export default function App() {
   // Filter and sort movies
   const filteredMovies = sortMovies(
     filterMovies(movies, filters, currentUser, myStatuses, allUserStatuses),
-    filters.sortBy
+    filters.sortBy,
+    { view: filters.view, myStatuses, allUserStatuses }
   )
 
   // Get recently watched movies (last 3) - only movies added by current user

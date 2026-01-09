@@ -68,12 +68,7 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}, allU
     if (filters.genre && m.genre !== filters.genre) return false
     if (filters.mood && m.mood !== filters.mood) return false
 
-    // Watched filter - supports both global and per-user options
-    // Global watched: check movie's watched flag OR if any user has watched via per-user system
-    if (filters.watched === 'watched') {
-      const anyUserWatched = allUserStatuses.some(s => s.movie_id === m.id && s.watched)
-      if (!m.watched && !anyUserWatched) return false
-    }
+    // Watched filter - unwatched global shows movies no one has watched
     if (filters.watched === 'unwatched') {
       const anyUserWatched = allUserStatuses.some(s => s.movie_id === m.id && s.watched)
       if (m.watched || anyUserWatched) return false
@@ -92,7 +87,21 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}, allU
   })
 }
 
-export function sortMovies(movies, sortBy) {
+export function sortMovies(movies, sortBy, options = {}) {
+  const { view, myStatuses = {}, allUserStatuses = [] } = options
+
+  // Helper to get average rating from all users
+  const getAverageRating = (movieId) => {
+    const ratings = allUserStatuses.filter(s => s.movie_id === movieId && s.rating > 0)
+    if (ratings.length === 0) return 0
+    return ratings.reduce((sum, s) => sum + s.rating, 0) / ratings.length
+  }
+
+  // Helper to get my personal rating
+  const getMyRating = (movieId) => {
+    return myStatuses[movieId]?.rating || 0
+  }
+
   return [...movies].sort((a, b) => {
     switch (sortBy) {
       case 'created_at':
@@ -100,7 +109,11 @@ export function sortMovies(movies, sortBy) {
       case 'year':
         return (b.year || 0) - (a.year || 0)
       case 'rating':
-        return (b.rating || 0) - (a.rating || 0)
+        // In "mine" view, sort by personal rating; otherwise by average rating
+        if (view === 'mine') {
+          return getMyRating(b.id) - getMyRating(a.id)
+        }
+        return getAverageRating(b.id) - getAverageRating(a.id)
       case 'title':
         return (a.title || '').localeCompare(b.title || '')
       default:
