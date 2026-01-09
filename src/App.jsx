@@ -37,6 +37,7 @@ import MovieNightScheduler from './components/MovieNightScheduler'
 import OfflineIndicator from './components/OfflineIndicator'
 import InstallPrompt from './components/InstallPrompt'
 import AdminPanel from './components/AdminPanel'
+import AdminDashboard from './components/AdminDashboard'
 import BugReportModal from './components/BugReportModal'
 import MyBugReports from './components/MyBugReports'
 import AnnouncementBanner from './components/AnnouncementBanner'
@@ -179,6 +180,9 @@ export default function App() {
     removeUser,
     removeMovie
   } = useAdmin(authUserId)
+
+  // Admin view mode - admins can switch to "view as user" mode
+  const [adminViewAsUser, setAdminViewAsUser] = useState(false)
 
   // Tutorial state
   const {
@@ -403,6 +407,134 @@ export default function App() {
   // Show login screen if not authenticated
   if (!isAuthenticated) {
     return <Auth darkMode={darkMode} />
+  }
+
+  // Show Admin Dashboard for admin users (unless they're viewing as user)
+  if (isAdmin && !adminViewAsUser) {
+    return (
+      <>
+        <AdminDashboard
+          users={users}
+          movies={movies}
+          currentUserId={users.find(u => u.name === currentUser)?.id}
+          authUserId={authUserId}
+          votingSessions={allVotingSessions}
+          onToggleUserAdmin={async (userId, makeAdmin) => {
+            try {
+              await toggleUserAdmin(userId, makeAdmin)
+              addToast(makeAdmin ? 'User is now an admin' : 'Admin access removed', 'success')
+            } catch (err) {
+              addToast('Failed to update admin status', 'error')
+            }
+          }}
+          onDeleteUser={async (userId) => {
+            try {
+              await removeUser(userId)
+              addToast('User deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete user', 'error')
+            }
+          }}
+          onDeleteMovie={async (movieId) => {
+            try {
+              await removeMovie(movieId)
+              addToast('Movie deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete movie', 'error')
+            }
+          }}
+          onEditMovie={(movie) => {
+            setAdminViewAsUser(true)
+            setEditingMovie(movie)
+          }}
+          onEditUser={async (userId, updates) => {
+            try {
+              await updateUser(userId, updates)
+              addToast('User updated', 'success')
+            } catch (err) {
+              addToast('Failed to update user', 'error')
+            }
+          }}
+          collections={adminCollections}
+          onFetchCollections={fetchAdminCollections}
+          onDeleteCollection={handleDeleteCollection}
+          announcements={announcements}
+          onFetchAnnouncements={fetchAnnouncements}
+          onAddAnnouncement={async (title, message, type, expiresAt) => {
+            try {
+              await addAnnouncement(title, message, type, expiresAt, users.find(u => u.name === currentUser)?.id)
+              addToast('Announcement created', 'success')
+            } catch (err) {
+              addToast('Failed to create announcement', 'error')
+            }
+          }}
+          onEditAnnouncement={async (id, updates) => {
+            try {
+              await editAnnouncement(id, updates)
+              addToast('Announcement updated', 'success')
+            } catch (err) {
+              addToast('Failed to update announcement', 'error')
+            }
+          }}
+          onDeleteAnnouncement={async (id) => {
+            try {
+              await removeAnnouncement(id)
+              addToast('Announcement deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete announcement', 'error')
+            }
+          }}
+          bugReports={bugReports}
+          onFetchBugReports={fetchBugReports}
+          onEditBugReport={async (id, updates) => {
+            try {
+              await editBugReport(id, updates)
+              addToast('Bug report updated', 'success')
+            } catch (err) {
+              addToast('Failed to update bug report', 'error')
+            }
+          }}
+          onDeleteBugReport={async (id) => {
+            try {
+              await removeBugReport(id)
+              addToast('Bug report deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete bug report', 'error')
+            }
+          }}
+          changelog={changelog}
+          onFetchChangelog={fetchChangelog}
+          onAddChangelog={async (title, description, type, version) => {
+            try {
+              await addChangelogEntry(title, description, type, version, users.find(u => u.name === currentUser)?.id)
+              addToast('Changelog entry created', 'success')
+            } catch (err) {
+              addToast('Failed to create changelog entry', 'error')
+            }
+          }}
+          onEditChangelog={async (id, updates) => {
+            try {
+              await editChangelogEntry(id, updates)
+              addToast('Changelog entry updated', 'success')
+            } catch (err) {
+              addToast('Failed to update changelog entry', 'error')
+            }
+          }}
+          onDeleteChangelog={async (id) => {
+            try {
+              await removeChangelogEntry(id)
+              addToast('Changelog entry deleted', 'success')
+            } catch (err) {
+              addToast('Failed to delete changelog entry', 'error')
+            }
+          }}
+          onViewAsUser={() => setAdminViewAsUser(true)}
+          onSignOut={signOut}
+          addToast={addToast}
+        />
+        <Analytics />
+      </>
+    )
   }
 
   // Filter and sort movies
@@ -642,7 +774,20 @@ export default function App() {
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
   return (
-    <div className={`min-h-screen ${bg} ${text} p-4 pb-20 md:pb-4 transition-colors relative`}>
+    <div className={`min-h-screen ${bg} ${text} p-4 pb-20 md:pb-4 transition-colors relative ${isAdmin && adminViewAsUser ? 'pt-14' : ''}`}>
+      {/* Admin "View as User" Banner */}
+      {isAdmin && adminViewAsUser && (
+        <div className="fixed top-0 left-0 right-0 bg-purple-600 text-white py-2 px-4 flex items-center justify-between z-50">
+          <span className="text-sm font-medium">Viewing as User</span>
+          <button
+            onClick={() => setAdminViewAsUser(false)}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm font-medium transition-colors"
+          >
+            Back to Admin Dashboard
+          </button>
+        </div>
+      )}
+
       {/* Offline Indicator */}
       <OfflineIndicator />
 
