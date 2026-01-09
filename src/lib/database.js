@@ -474,13 +474,19 @@ export async function updateMovieNight(id, updates) {
   return data
 }
 
-export async function deleteMovieNight(id) {
-  const { error } = await supabase
+export async function deleteMovieNight(id, isAdmin = false) {
+  const { data, error } = await supabase
     .from('movie_nights')
     .delete()
     .eq('id', id)
+    .select()
 
   if (error) throw error
+
+  // Check if deletion actually happened (RLS may silently block it)
+  if (!data || data.length === 0) {
+    throw new Error('Unable to delete movie night. You may not have permission.')
+  }
 }
 
 // ============ ADMIN ============
