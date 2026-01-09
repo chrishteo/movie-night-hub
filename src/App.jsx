@@ -418,9 +418,12 @@ export default function App() {
         <AdminDashboard
           users={users}
           movies={movies}
+          totalMovies={total}
+          onLoadAllMovies={loadAll}
           currentUserId={users.find(u => u.name === currentUser)?.id}
           authUserId={authUserId}
           votingSessions={allVotingSessions}
+          onDeleteSession={deleteSession}
           onToggleUserAdmin={async (userId, makeAdmin) => {
             try {
               await toggleUserAdmin(userId, makeAdmin)

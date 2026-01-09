@@ -40,9 +40,12 @@ const CHANGELOG_TYPES = [
 export default function AdminDashboard({
   users,
   movies,
+  totalMovies: totalMoviesProp,
+  onLoadAllMovies,
   currentUserId,
   authUserId,
   votingSessions = [],
+  onDeleteSession,
   onToggleUserAdmin,
   onDeleteUser,
   onDeleteMovie,
@@ -124,11 +127,18 @@ export default function AdminDashboard({
     }
   }
 
-  // Stats calculations
+  // Load all movies when viewing Movies section
+  useEffect(() => {
+    if (activeSection === 'movies' && onLoadAllMovies) {
+      onLoadAllMovies()
+    }
+  }, [activeSection, onLoadAllMovies])
+
+  // Stats calculations - use totalMoviesProp for accurate count
   const stats = {
     totalUsers: users.length,
     adminUsers: users.filter(u => u.is_admin).length,
-    totalMovies: movies.length,
+    totalMovies: totalMoviesProp || movies.length,
     watchedMovies: movies.filter(m => m.watched).length,
     activeSessions: votingSessions.filter(s => s.status === 'active').length,
     upcomingEvents: scheduledEvents.filter(e => new Date(e.scheduled_date) >= new Date() && !e.completed).length,
@@ -734,11 +744,33 @@ export default function AdminDashboard({
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-medium">{session.name || `Session ${session.id.slice(0, 8)}`}</p>
-                          <p className="text-sm text-gray-400">by {getSessionCreator(session)} - {session.movie_ids?.length || 0} movies</p>
+                          <p className="text-sm text-gray-400">
+                            by {getSessionCreator(session)}
+                            {session.created_at && (
+                              <span> • {formatDate(session.created_at)}</span>
+                            )}
+                          </p>
                         </div>
-                        <span className={`px-2 py-1 text-xs rounded ${session.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-600 text-gray-400'}`}>
-                          {session.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs rounded ${session.status === 'active' ? 'bg-green-500/20 text-green-400' : session.status === 'completed' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-600 text-gray-400'}`}>
+                            {session.status}
+                          </span>
+                          {onDeleteSession && (
+                            <button
+                              onClick={() => showConfirm('Delete Session', `Delete session "${session.name}"? This cannot be undone.`, async () => {
+                                try {
+                                  await onDeleteSession(session.id)
+                                  addToast('Session deleted', 'success')
+                                } catch (err) {
+                                  addToast('Failed to delete session', 'error')
+                                }
+                              })}
+                              className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 rounded"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
