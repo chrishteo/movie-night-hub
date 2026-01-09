@@ -26,6 +26,20 @@ export function useVotes(authUserId = null) {
     }
   }, [])
 
+  // Refetch when app becomes visible (mobile background recovery)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchVotes()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchVotes])
+
   useEffect(() => {
     fetchVotes()
 

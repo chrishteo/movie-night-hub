@@ -69,6 +69,21 @@ export function useVotingSessions(authUserId = null) {
     }
   }, [])
 
+  // Refetch when app becomes visible (mobile background recovery)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSessions()
+        fetchMyInvites()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchSessions, fetchMyInvites])
+
   useEffect(() => {
     fetchSessions()
     fetchMyInvites()
@@ -299,6 +314,23 @@ export function useVotingSession(sessionId, authUserId = null) {
       setLoading(false)
     }
   }, [sessionId])
+
+  // Refetch when app becomes visible (mobile background recovery)
+  useEffect(() => {
+    if (!sessionId) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // App became visible - refetch to catch any missed updates
+        fetchSession()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [sessionId, fetchSession])
 
   useEffect(() => {
     fetchSession()
