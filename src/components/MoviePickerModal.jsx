@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getAllMovies } from '../lib/database'
+import { getAllMovies, getCollections, getCollectionMovies } from '../lib/database'
 
 export default function MoviePickerModal({
   maxPicks = 5,
   userName,
+  authUserId,
   onConfirm,
   onCancel,
   darkMode
@@ -13,20 +14,52 @@ export default function MoviePickerModal({
   const [selectedMovies, setSelectedMovies] = useState([])
   const [search, setSearch] = useState('')
 
-  // Fetch all movies
+  // Collection filter state
+  const [collections, setCollections] = useState([])
+  const [selectedCollection, setSelectedCollection] = useState(null)
+  const [collectionMovieIds, setCollectionMovieIds] = useState([])
+  const [loadingCollection, setLoadingCollection] = useState(false)
+
+  // Fetch all movies and collections
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchData = async () => {
       try {
-        const movies = await getAllMovies()
+        const [movies, cols] = await Promise.all([
+          getAllMovies(),
+          getCollections()
+        ])
         setAllMovies(movies)
+        setCollections(cols || [])
       } catch (err) {
-        console.error('Failed to fetch movies:', err)
+        console.error('Failed to fetch data:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchMovies()
+    fetchData()
   }, [])
+
+  // Fetch collection movies when a collection is selected
+  useEffect(() => {
+    if (!selectedCollection) {
+      setCollectionMovieIds([])
+      return
+    }
+
+    const fetchCollectionMovies = async () => {
+      setLoadingCollection(true)
+      try {
+        const movieIds = await getCollectionMovies(selectedCollection.id)
+        setCollectionMovieIds(movieIds)
+      } catch (err) {
+        console.error('Failed to fetch collection movies:', err)
+        setCollectionMovieIds([])
+      } finally {
+        setLoadingCollection(false)
+      }
+    }
+    fetchCollectionMovies()
+  }, [selectedCollection])
 
   // Filter to user's unwatched movies
   const userUnwatchedMovies = useMemo(() => {
@@ -35,17 +68,32 @@ export default function MoviePickerModal({
     )
   }, [allMovies, userName])
 
-  // Apply search filter
+  // Apply collection filter, then search filter
   const filteredMovies = useMemo(() => {
-    if (!search.trim()) return userUnwatchedMovies
-    const searchLower = search.toLowerCase()
-    return userUnwatchedMovies.filter(m =>
-      m.title.toLowerCase().includes(searchLower) ||
-      m.director?.toLowerCase().includes(searchLower) ||
-      m.genre?.toLowerCase().includes(searchLower) ||
-      m.year?.toString().includes(searchLower)
-    )
-  }, [userUnwatchedMovies, search])
+    let movies = userUnwatchedMovies
+
+    // Apply collection filter if selected
+    if (selectedCollection && collectionMovieIds.length > 0) {
+      movies = movies.filter(m => collectionMovieIds.includes(m.id))
+    }
+
+    // Apply search filter
+    if (search.trim()) {
+      const searchLower = search.toLowerCase()
+      movies = movies.filter(m =>
+        m.title.toLowerCase().includes(searchLower) ||
+        m.director?.toLowerCase().includes(searchLower) ||
+        m.genre?.toLowerCase().includes(searchLower) ||
+        m.year?.toString().includes(searchLower)
+      )
+    }
+
+    return movies
+  }, [userUnwatchedMovies, selectedCollection, collectionMovieIds, search])
+
+  // Separate own collections vs shared collections
+  const ownCollections = collections.filter(c => c.user_id === authUserId)
+  const sharedCollections = collections.filter(c => c.user_id !== authUserId)
 
   const toggleMovie = (movieId) => {
     setSelectedMovies(prev => {
@@ -139,6 +187,57 @@ export default function MoviePickerModal({
           </div>
         ) : (
           <>
+            {/* Collection Filter */}
+            {collections.length > 0 && (
+              <div className="mb-3">
+                <label className="text-sm font-medium mb-1.5 block text-gray-400">Filter by collection:</label>
+                <select
+                  value={selectedCollection?.id || ''}
+                  onChange={(e) => {
+                    const colId = e.target.value
+                    if (!colId) {
+                      setSelectedCollection(null)
+                    } else {
+                      const col = collections.find(c => c.id === colId)
+                      setSelectedCollection(col || null)
+                    }
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg border ${inputBg} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                >
+                  <option value="">All My Movies</option>
+                  {ownCollections.length > 0 && (
+                    <optgroup label="My Collections">
+                      {ownCollections.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.emoji} {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {sharedCollections.length > 0 && (
+                    <optgroup label="Shared With Me">
+                      {sharedCollections.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.emoji} {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                {selectedCollection && loadingCollection && (
+                  <p className="text-xs text-gray-400 mt-1">Loading collection...</p>
+                )}
+                {selectedCollection && !loadingCollection && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {collectionMovieIds.length} movie{collectionMovieIds.length !== 1 ? 's' : ''} in collection
+                    {filteredMovies.length !== collectionMovieIds.length && (
+                      <span> ({filteredMovies.length} unwatched)</span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Search */}
             <div className="mb-4">
               <input
@@ -153,7 +252,17 @@ export default function MoviePickerModal({
             {/* Movie Grid */}
             <div className="flex-1 overflow-y-auto mb-4">
               {filteredMovies.length === 0 ? (
-                <p className="text-center py-8 text-gray-400">No movies match your search</p>
+                <div className="text-center py-8 text-gray-400">
+                  {selectedCollection ? (
+                    search ? (
+                      <p>No movies in "{selectedCollection.name}" match your search</p>
+                    ) : (
+                      <p>No unwatched movies in "{selectedCollection.name}"</p>
+                    )
+                  ) : (
+                    <p>No movies match your search</p>
+                  )}
+                </div>
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {filteredMovies.map(movie => {

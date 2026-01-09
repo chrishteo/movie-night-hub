@@ -3,6 +3,7 @@ import { getAllMovies, setUserMovieStatus, sendWatchInvites } from '../lib/datab
 import ParticipantSelector from './ParticipantSelector'
 import { Avatar } from './AvatarPicker'
 import { useToast } from './Toast'
+import { GENRES, MOODS } from '../utils/constants'
 
 export default function SpinWheel({
   users = [],
@@ -22,6 +23,10 @@ export default function SpinWheel({
   const [prioritizeShared, setPrioritizeShared] = useState(false)
   const [allMovies, setAllMovies] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Filter state
+  const [genreFilter, setGenreFilter] = useState('')
+  const [moodFilter, setMoodFilter] = useState('')
 
   // Movie night log state
   const [showLogForm, setShowLogForm] = useState(false)
@@ -48,7 +53,13 @@ export default function SpinWheel({
     ? allMovies.filter(m => selectedUsers.includes(m.added_by))
     : allMovies
 
-  const unwatched = participantMovies.filter(m => !m.watched)
+  // Apply filters: unwatched + genre + mood
+  const unwatched = participantMovies.filter(m => {
+    if (m.watched) return false
+    if (genreFilter && m.genre !== genreFilter) return false
+    if (moodFilter && m.mood !== moodFilter) return false
+    return true
+  })
 
   // Find shared movies (same title added by multiple selected users)
   const getSharedMovies = () => {
@@ -216,6 +227,51 @@ export default function SpinWheel({
           />
         )}
 
+        {/* Genre and Mood Filters */}
+        <div className="mb-4">
+          <p className="text-sm font-medium mb-2 opacity-70">Filter by:</p>
+          <div className="flex gap-2">
+            <select
+              value={genreFilter}
+              onChange={(e) => setGenreFilter(e.target.value)}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm ${
+                darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+              } border focus:outline-none focus:ring-2 focus:ring-purple-500`}
+            >
+              <option value="">Any Genre</option>
+              {GENRES.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+            <select
+              value={moodFilter}
+              onChange={(e) => setMoodFilter(e.target.value)}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm ${
+                darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+              } border focus:outline-none focus:ring-2 focus:ring-purple-500`}
+            >
+              <option value="">Any Mood</option>
+              {MOODS.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          {(genreFilter || moodFilter) && (
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-purple-400">
+                {unwatched.length} movie{unwatched.length !== 1 ? 's' : ''} match
+                {unwatched.length === 0 && ' - try removing a filter'}
+              </p>
+              <button
+                onClick={() => { setGenreFilter(''); setMoodFilter(''); }}
+                className="text-xs text-gray-400 hover:text-white"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Prioritize shared movies option */}
         {selectedUsers.length >= 2 && (
           sharedMovies.length > 0 ? (
@@ -372,7 +428,9 @@ export default function SpinWheel({
             <p className="text-yellow-400 text-sm mb-4">
               {selectedUsers.length === 0
                 ? 'Select at least one person above!'
-                : 'No unwatched movies to pick from!'}
+                : (genreFilter || moodFilter)
+                  ? 'No movies match your filters - try adjusting them!'
+                  : 'No unwatched movies to pick from!'}
             </p>
           )}
         </div>

@@ -444,6 +444,7 @@ export default function VotingSessionList({
         <MoviePickerModal
           maxPicks={pendingSession?.movies_per_user || pendingInviteSession?.session?.movies_per_user || 5}
           userName={currentUser}
+          authUserId={authUserId}
           onConfirm={pendingSession ? handleCreatorMoviePicks : handleAcceptWithMovies}
           onCancel={handleCancelMoviePicker}
           darkMode={darkMode}
