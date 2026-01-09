@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Avatar } from './AvatarPicker'
 import AvatarPicker from './AvatarPicker'
 
@@ -21,7 +21,32 @@ export default function Header({
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [editingAvatar, setEditingAvatar] = useState(false)
+  const [dropdownAlign, setDropdownAlign] = useState('right')
+  const buttonRef = useRef(null)
   const currentUserObj = users.find(u => u.name === currentUser)
+
+  // Calculate dropdown alignment based on button position
+  useEffect(() => {
+    if (showUserMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const dropdownWidth = 180
+      const viewportWidth = window.innerWidth
+
+      // Check if dropdown would overflow on the right when left-aligned
+      const wouldOverflowRight = rect.left + dropdownWidth > viewportWidth - 16
+      // Check if dropdown would overflow on the left when right-aligned
+      const wouldOverflowLeft = rect.right - dropdownWidth < 16
+
+      if (wouldOverflowRight && !wouldOverflowLeft) {
+        setDropdownAlign('right')
+      } else if (wouldOverflowLeft && !wouldOverflowRight) {
+        setDropdownAlign('left')
+      } else {
+        // Default to right-aligned (dropdown extends left from button)
+        setDropdownAlign('right')
+      }
+    }
+  }, [showUserMenu])
 
   // Only show profiles linked to the current auth user
   const myProfiles = authUserId
@@ -42,6 +67,7 @@ export default function Header({
         {/* User selector with avatar */}
         <div className="relative">
           <button
+            ref={buttonRef}
             onClick={() => setShowUserMenu(!showUserMenu)}
             className={`flex items-center gap-2 px-2 py-1 rounded border ${
               darkMode
@@ -60,7 +86,9 @@ export default function Header({
                 className="fixed inset-0 z-10"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className={`absolute right-0 top-10 z-20 rounded-lg shadow-xl min-w-[180px] ${
+              <div className={`absolute top-10 z-20 rounded-lg shadow-xl min-w-[180px] ${
+                dropdownAlign === 'right' ? 'right-0' : 'left-0'
+              } ${
                 darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}>
                 {/* User list - only show profiles linked to current auth user */}
@@ -156,6 +184,10 @@ export default function Header({
                       </button>
                     </>
                   )}
+                  {/* Version info */}
+                  <div className={`px-3 py-2 text-xs opacity-40 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    v{__APP_VERSION__} ({__GIT_HASH__})
+                  </div>
                 </div>
               </div>
             </>

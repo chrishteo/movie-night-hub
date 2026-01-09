@@ -2,8 +2,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
+
+// Get version from package.json
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'))
+const appVersion = packageJson.version
+
+// Get git commit hash for version tracking
+const getGitHash = () => {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    return 'dev'
+  }
+}
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __GIT_HASH__: JSON.stringify(getGitHash()),
+  },
   test: {
     globals: true,
     environment: 'jsdom',
