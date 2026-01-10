@@ -16,6 +16,7 @@ export default function NewMoviesModal({
   movies = [],
   onAcknowledge,
   onAcknowledgeAll,
+  onNotInterested,
   onClose,
   onViewDetails,
   darkMode
@@ -53,6 +54,19 @@ export default function NewMoviesModal({
       await onAcknowledge(movie.id, false)
       setProcessedIds(prev => new Set([...prev, movie.id]))
       addToast(`"${movie.title}" added to your watchlist`, 'success')
+    } catch (err) {
+      addToast('Failed to update movie', 'error')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleNotInterested = async (movie) => {
+    setProcessingId(movie.id)
+    try {
+      await onNotInterested(movie.id)
+      setProcessedIds(prev => new Set([...prev, movie.id]))
+      addToast(`"${movie.title}" marked as not interested`, 'success')
     } catch (err) {
       addToast('Failed to update movie', 'error')
     } finally {
@@ -112,7 +126,7 @@ export default function NewMoviesModal({
           ) : (
             <div className="space-y-3">
               <p className={`text-sm ${textMuted} mb-4`}>
-                Other users added these movies. Add them to your watchlist to include them in your spin wheel, or mark as already watched to skip them.
+                Other users added these movies. Add them to your watchlist to include them in your spin wheel, or mark as already watched or not interested to skip them.
               </p>
               {remainingMovies.map(movie => (
                 <div key={movie.id} className={`${card} border ${border} rounded-lg p-4`}>
@@ -151,18 +165,25 @@ export default function NewMoviesModal({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     <button
                       onClick={() => handleMarkWatched(movie)}
                       disabled={processingId === movie.id || processingAll}
-                      className="flex-1 px-3 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white text-sm disabled:opacity-50 transition-colors"
+                      className="flex-1 min-w-[100px] px-3 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white text-sm disabled:opacity-50 transition-colors"
                     >
                       {processingId === movie.id ? '...' : 'Already Watched'}
                     </button>
                     <button
+                      onClick={() => handleNotInterested(movie)}
+                      disabled={processingId === movie.id || processingAll}
+                      className="flex-1 min-w-[100px] px-3 py-2 rounded bg-amber-600 hover:bg-amber-700 text-white text-sm disabled:opacity-50 transition-colors"
+                    >
+                      {processingId === movie.id ? '...' : 'Not Interested'}
+                    </button>
+                    <button
                       onClick={() => handleAddToWatchlist(movie)}
                       disabled={processingId === movie.id || processingAll}
-                      className="flex-1 px-3 py-2 rounded bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50 transition-colors"
+                      className="flex-1 min-w-[100px] px-3 py-2 rounded bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50 transition-colors"
                     >
                       {processingId === movie.id ? '...' : 'Add to Watchlist'}
                     </button>

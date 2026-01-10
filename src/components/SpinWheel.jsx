@@ -69,12 +69,15 @@ export default function SpinWheel({
   // Find current user's name for legacy movie ownership check
   const currentUserName = users.find(u => u.auth_id === authUserId)?.name
 
-  // Apply filters: unwatched (per-user) + acknowledged + genre + mood
+  // Apply filters: unwatched (per-user) + acknowledged + interested + genre + mood
   const unwatched = participantMovies.filter(m => {
     const myStatus = myStatuses[m.id]
 
     // Exclude if I've watched it (per-user)
     if (myStatus?.watched) return false
+
+    // Exclude if I marked it as not interested
+    if (myStatus?.interested === false) return false
 
     // Check if this is my own movie (by user_id or by added_by name for legacy movies)
     const isOwnMovie = m.user_id === authUserId || m.added_by === currentUserName

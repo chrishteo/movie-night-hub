@@ -122,6 +122,21 @@ export function useUserMovieStatus(authUserId) {
     }
   }, [authUserId])
 
+  // Mark a movie as not interested (acknowledges but excludes from spin/voting)
+  const markNotInterested = useCallback(async (movieId) => {
+    if (!authUserId) return
+
+    try {
+      await setUserMovieStatus(movieId, authUserId, {
+        acknowledged: true,
+        interested: false
+      })
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [authUserId])
+
   // Helper: Get my status for a movie
   const getMyStatus = useCallback((movieId) => {
     return myStatuses[movieId] || { watched: false, rating: 0 }
@@ -163,6 +178,7 @@ export function useUserMovieStatus(authUserId) {
     toggleMyWatched,
     setMyRating,
     acknowledgeMovie,
+    markNotInterested,
     getMyStatus,
     getMovieStatuses,
     getAverageRating,

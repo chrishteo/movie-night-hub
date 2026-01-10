@@ -70,11 +70,12 @@ export default function MoviePickerModal({
     fetchCollectionMovies()
   }, [selectedCollection])
 
-  // Filter to user's unwatched movies (per-user watched status)
+  // Filter to user's unwatched movies (per-user watched status, exclude not interested)
   const userUnwatchedMovies = useMemo(() => {
-    return allMovies.filter(m =>
-      m.added_by === userName && !myStatuses[m.id]?.watched
-    )
+    return allMovies.filter(m => {
+      const status = myStatuses[m.id]
+      return m.added_by === userName && !status?.watched && status?.interested !== false
+    })
   }, [allMovies, userName, myStatuses])
 
   // Apply collection filter, then search filter

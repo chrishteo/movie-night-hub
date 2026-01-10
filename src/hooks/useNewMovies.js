@@ -7,9 +7,10 @@ import { getAllMovies } from '../lib/database'
  * @param {string} authUserId - Current user's auth ID
  * @param {string} currentUserName - Current user's display name (for legacy movies)
  * @param {Function} acknowledgeMovie - Function to acknowledge a movie
+ * @param {Function} markNotInterested - Function to mark a movie as not interested
  * @param {boolean} statusesLoading - Whether myStatuses is still loading
  */
-export function useNewMovies(myStatuses, authUserId, currentUserName, acknowledgeMovie, statusesLoading) {
+export function useNewMovies(myStatuses, authUserId, currentUserName, acknowledgeMovie, markNotInterested, statusesLoading) {
   const [allMovies, setAllMovies] = useState([])
   const [moviesLoading, setMoviesLoading] = useState(true)
 
@@ -61,10 +62,16 @@ export function useNewMovies(myStatuses, authUserId, currentUserName, acknowledg
     }
   }, [newMovies, acknowledgeMovie])
 
+  // Handle marking a movie as not interested
+  const handleNotInterested = useCallback(async (movieId) => {
+    await markNotInterested(movieId)
+  }, [markNotInterested])
+
   return {
     newMovies,
     newMovieCount,
     handleAcknowledge,
-    handleAcknowledgeAll
+    handleAcknowledgeAll,
+    handleNotInterested
   }
 }

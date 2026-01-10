@@ -137,6 +137,7 @@ export default function App() {
     toggleMyWatched,
     setMyRating,
     acknowledgeMovie,
+    markNotInterested,
     getMyStatus,
     getMovieStatuses,
     getAverageRating,
@@ -150,8 +151,9 @@ export default function App() {
     newMovies,
     newMovieCount,
     handleAcknowledge: acknowledgeNewMovie,
-    handleAcknowledgeAll: acknowledgeAllNewMovies
-  } = useNewMovies(myStatuses, authUserId, currentUser, acknowledgeMovie, statusesLoading)
+    handleAcknowledgeAll: acknowledgeAllNewMovies,
+    handleNotInterested: markNewMovieNotInterested
+  } = useNewMovies(myStatuses, authUserId, currentUser, acknowledgeMovie, markNotInterested, statusesLoading)
 
   const {
     invites,
@@ -1436,6 +1438,7 @@ export default function App() {
           movies={newMovies}
           onAcknowledge={acknowledgeNewMovie}
           onAcknowledgeAll={acknowledgeAllNewMovies}
+          onNotInterested={markNewMovieNotInterested}
           onClose={() => setShowNewMovies(false)}
           onViewDetails={setSelectedMovie}
           darkMode={darkMode}
