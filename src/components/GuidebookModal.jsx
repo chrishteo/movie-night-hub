@@ -18,7 +18,8 @@ const BUTTON_GUIDE = [
   { icon: '📚', name: 'Collections', description: 'Create themed collections and share them with others.' },
   { icon: '📅', name: 'Schedule', description: 'Plan movie nights with a calendar. Set dates, times, and invite friends.' },
   { icon: '📩', name: 'Invites', description: 'View and manage movie recommendations sent by friends.' },
-  { icon: '☑️', name: 'Select', description: 'Enable bulk selection to mark multiple movies as watched or delete them.' }
+  { icon: '☑️', name: 'Select', description: 'Enable bulk selection to mark multiple movies as watched or delete them.' },
+  { icon: '🆕', name: 'NEW', description: 'Review movies added by others. Shows a count badge when there are new movies to review.' }
 ]
 
 const FILTER_GUIDE = [
@@ -33,6 +34,11 @@ const FILTER_GUIDE = [
 ]
 
 const FEATURE_GUIDE = [
+  {
+    name: 'New Movies Review',
+    icon: '🆕',
+    description: 'When others add movies, you\'ll see a NEW badge. Review each movie with three options: "Already Watched" (skip it), "Not Interested" (exclude from spin/vote), or "Add to Watchlist" (include in your rotation).'
+  },
   {
     name: 'Collections',
     icon: '📚',
