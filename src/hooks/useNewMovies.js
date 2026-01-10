@@ -1,26 +1,51 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
+import { getAllMovies } from '../lib/database'
 
 /**
  * Hook to track movies added by other users that haven't been acknowledged yet
- * @param {Array} movies - Full list of movies
  * @param {Object} myStatuses - Map of movieId -> user's status for that movie
  * @param {string} authUserId - Current user's auth ID
+ * @param {string} currentUserName - Current user's display name (for legacy movies)
  * @param {Function} acknowledgeMovie - Function to acknowledge a movie
+ * @param {boolean} statusesLoading - Whether myStatuses is still loading
  */
-export function useNewMovies(movies, myStatuses, authUserId, acknowledgeMovie) {
+export function useNewMovies(myStatuses, authUserId, currentUserName, acknowledgeMovie, statusesLoading) {
+  const [allMovies, setAllMovies] = useState([])
+  const [moviesLoading, setMoviesLoading] = useState(true)
+
+  // Fetch all movies for the NEW badge (independent of current view filter)
+  useEffect(() => {
+    const fetchAllMovies = async () => {
+      try {
+        setMoviesLoading(true)
+        const movies = await getAllMovies()
+        setAllMovies(movies || [])
+      } catch (err) {
+        console.error('Error fetching all movies for new badge:', err)
+      } finally {
+        setMoviesLoading(false)
+      }
+    }
+    fetchAllMovies()
+  }, [])
+
   // Get movies added by others that haven't been acknowledged
   const newMovies = useMemo(() => {
-    if (!authUserId || !movies) return []
+    // Don't calculate until both movies and statuses have loaded
+    if (!authUserId || moviesLoading || statusesLoading) {
+      return []
+    }
 
-    return movies.filter(movie => {
-      // Skip movies added by current user
+    return allMovies.filter(movie => {
+      // Skip movies added by current user (check both user_id and added_by for legacy)
       if (movie.user_id === authUserId) return false
+      if (movie.added_by === currentUserName) return false
 
       // Check if acknowledged
       const status = myStatuses[movie.id]
       return !status?.acknowledged
     })
-  }, [movies, myStatuses, authUserId])
+  }, [allMovies, myStatuses, authUserId, currentUserName, moviesLoading, statusesLoading])
 
   const newMovieCount = newMovies.length
 

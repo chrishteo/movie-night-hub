@@ -22,10 +22,12 @@ export function useMovies(authUserId = null, serverFilters = {}) {
   const filtersRef = useRef(null) // Start with null to trigger initial fetch
   const loadingAllRef = useRef(false)
   const loadingMoreRef = useRef(false)
+  const resetInProgressRef = useRef(false) // Tracks if a reset/filter change fetch is happening
 
   const fetchMovies = useCallback(async (reset = true, filters = filtersRef.current) => {
     try {
       if (reset) {
+        resetInProgressRef.current = true // Block loadMore during reset
         setLoading(true)
         pageRef.current = 0
         setAllLoaded(false)
@@ -57,12 +59,14 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     } finally {
       setLoading(false)
       setLoadingMore(false)
+      resetInProgressRef.current = false // Allow loadMore again
     }
   }, [])
 
   const loadMore = useCallback(async () => {
     // Use ref for synchronous check to prevent race conditions
-    if (loadingMoreRef.current || !hasMore) return
+    // Also block if a reset/filter change is in progress
+    if (loadingMoreRef.current || !hasMore || resetInProgressRef.current) return
     loadingMoreRef.current = true
     pageRef.current += 1
     try {
@@ -102,6 +106,11 @@ export function useMovies(authUserId = null, serverFilters = {}) {
 
   // Refetch when server filters change (also handles initial fetch)
   useEffect(() => {
+    // Skip fetching if serverFilters is null (indicates "not ready yet")
+    if (serverFilters === null) {
+      return
+    }
+
     const filtersChanged = JSON.stringify(serverFilters) !== JSON.stringify(filtersRef.current)
     filtersRef.current = serverFilters
 

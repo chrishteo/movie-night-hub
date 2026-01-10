@@ -97,8 +97,11 @@ export default function App() {
   } = useUsers(user)
 
   // Server-side filters for pagination to work correctly
+  // Use null to indicate "not ready yet" - useMovies will skip fetching
   const serverFilters = useMemo(() => {
-    if (filters.view === 'mine' && currentUser) {
+    if (filters.view === 'mine') {
+      // Wait for currentUser before fetching to avoid fetching ALL then filtering
+      if (!currentUser) return null
       return { addedBy: currentUser }
     }
     return {}
@@ -130,6 +133,7 @@ export default function App() {
   const {
     statuses: allUserStatuses,
     myStatuses,
+    loading: statusesLoading,
     toggleMyWatched,
     setMyRating,
     acknowledgeMovie,
@@ -147,7 +151,7 @@ export default function App() {
     newMovieCount,
     handleAcknowledge: acknowledgeNewMovie,
     handleAcknowledgeAll: acknowledgeAllNewMovies
-  } = useNewMovies(movies, myStatuses, authUserId, acknowledgeMovie)
+  } = useNewMovies(myStatuses, authUserId, currentUser, acknowledgeMovie, statusesLoading)
 
   const {
     invites,
