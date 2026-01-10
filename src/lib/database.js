@@ -1308,3 +1308,19 @@ export function subscribeToSessionMovies(sessionId, callback) {
     }, callback)
     .subscribe()
 }
+
+// ============ APP SETTINGS ============
+
+export async function getLatestVersion() {
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'latest_version')
+    .single()
+
+  if (error) {
+    console.error('Error fetching latest version:', error)
+    return null
+  }
+  return data?.value || null
+}

@@ -402,7 +402,8 @@ export default function App() {
   loadingMoreRef.current = loadingMore
 
   useEffect(() => {
-    if (hasClientFilters || !hasMore) return
+    // Don't set up observer while loading or if no more pages
+    if (hasClientFilters || !hasMore || moviesLoading) return
 
     const sentinel = scrollSentinelRef.current
     if (!sentinel) return
@@ -418,7 +419,7 @@ export default function App() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasClientFilters, hasMore, loadMore])
+  }, [hasClientFilters, hasMore, loadMore, moviesLoading])
 
   // Show loading screen while checking auth
   if (authLoading) {

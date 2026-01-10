@@ -1,9 +1,11 @@
+import { useVersionCheck } from '../hooks/useVersionCheck'
 import { useServiceWorker } from '../hooks/useServiceWorker'
 
 export default function UpdateBanner() {
-  const { needRefresh, offlineReady, updateApp, dismissUpdate, dismissOfflineReady } = useServiceWorker()
+  const { isOutdated, currentVersion, latestVersion, dismissUpdate, refreshApp } = useVersionCheck()
+  const { offlineReady, dismissOfflineReady } = useServiceWorker()
 
-  if (needRefresh) {
+  if (isOutdated) {
     return (
       <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 animate-slide-up">
         <div className="bg-purple-600 text-white rounded-lg shadow-lg p-4">
@@ -12,7 +14,7 @@ export default function UpdateBanner() {
             <div className="flex-1">
               <p className="font-bold">Update Available!</p>
               <p className="text-sm text-purple-200 mt-1">
-                A new version of Movie Night Hub is ready.
+                Version {latestVersion} is available (you have {currentVersion}).
               </p>
             </div>
           </div>
@@ -24,7 +26,7 @@ export default function UpdateBanner() {
               Later
             </button>
             <button
-              onClick={updateApp}
+              onClick={refreshApp}
               className="flex-1 px-3 py-2 rounded bg-white text-purple-600 font-medium text-sm hover:bg-purple-50 transition-colors"
             >
               Update Now

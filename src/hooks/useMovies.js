@@ -19,8 +19,9 @@ export function useMovies(authUserId = null, serverFilters = {}) {
   const [total, setTotal] = useState(0)
   const [allLoaded, setAllLoaded] = useState(false)
   const pageRef = useRef(0)
-  const filtersRef = useRef(serverFilters)
+  const filtersRef = useRef(null) // Start with null to trigger initial fetch
   const loadingAllRef = useRef(false)
+  const loadingMoreRef = useRef(false)
 
   const fetchMovies = useCallback(async (reset = true, filters = filtersRef.current) => {
     try {
@@ -28,6 +29,7 @@ export function useMovies(authUserId = null, serverFilters = {}) {
         setLoading(true)
         pageRef.current = 0
         setAllLoaded(false)
+        setHasMore(false) // Reset to prevent stale hasMore triggering loadMore
       } else {
         setLoadingMore(true)
       }
@@ -49,6 +51,9 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     } catch (err) {
       setError(err.message)
       console.error('Error fetching movies:', err)
+      // Stop pagination on error to prevent infinite loops
+      setHasMore(false)
+      setAllLoaded(true)
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -56,10 +61,16 @@ export function useMovies(authUserId = null, serverFilters = {}) {
   }, [])
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return
+    // Use ref for synchronous check to prevent race conditions
+    if (loadingMoreRef.current || !hasMore) return
+    loadingMoreRef.current = true
     pageRef.current += 1
-    await fetchMovies(false)
-  }, [fetchMovies, loadingMore, hasMore])
+    try {
+      await fetchMovies(false)
+    } finally {
+      loadingMoreRef.current = false
+    }
+  }, [fetchMovies, hasMore])
 
   // Load all remaining pages (used when filters are applied)
   const loadAll = useCallback(async () => {
@@ -80,24 +91,29 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     } catch (err) {
       setError(err.message)
       console.error('Error loading all movies:', err)
+      // Stop pagination on error
+      setHasMore(false)
+      setAllLoaded(true)
     } finally {
       setLoadingMore(false)
       loadingAllRef.current = false
     }
   }, [hasMore, allLoaded])
 
-  // Refetch when server filters change
+  // Refetch when server filters change (also handles initial fetch)
   useEffect(() => {
     const filtersChanged = JSON.stringify(serverFilters) !== JSON.stringify(filtersRef.current)
     filtersRef.current = serverFilters
 
+    // Always fetch on filter change, or on initial mount
     if (filtersChanged) {
       fetchMovies(true, serverFilters)
     }
   }, [serverFilters, fetchMovies])
 
   useEffect(() => {
-    fetchMovies()
+    // Initial fetch is now handled by the filter change effect above
+    // This effect only sets up the subscription
 
     // Subscribe to real-time updates
     const subscription = subscribeToMovies((payload) => {
