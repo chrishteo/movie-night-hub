@@ -37,10 +37,20 @@ export function useNewMovies(myStatuses, authUserId, currentUserName, acknowledg
       return []
     }
 
+    // Get titles of movies added by current user (normalized for comparison)
+    const myMovieTitles = new Set(
+      allMovies
+        .filter(m => m.user_id === authUserId || m.added_by === currentUserName)
+        .map(m => m.title.toLowerCase().trim())
+    )
+
     return allMovies.filter(movie => {
       // Skip movies added by current user (check both user_id and added_by for legacy)
       if (movie.user_id === authUserId) return false
       if (movie.added_by === currentUserName) return false
+
+      // Skip if current user already has this movie (same title)
+      if (myMovieTitles.has(movie.title.toLowerCase().trim())) return false
 
       // Check if acknowledged
       const status = myStatuses[movie.id]
