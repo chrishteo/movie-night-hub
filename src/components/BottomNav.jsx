@@ -14,6 +14,8 @@ export default function BottomNav({
   onShowInvites,
   invitePendingCount = 0,
   sessionInviteCount = 0,
+  onShowNewMovies,
+  newMovieCount = 0,
   isAdmin = false,
   darkMode
 }) {
@@ -30,6 +32,18 @@ export default function BottomNav({
           <span className="text-xl">+</span>
           <span className="text-xs mt-0.5">Add</span>
         </button>
+        {newMovieCount > 0 && (
+          <button
+            onClick={onShowNewMovies}
+            className="flex flex-col items-center justify-center min-w-[4.5rem] h-full text-yellow-500 active:bg-yellow-500/20 transition-colors relative"
+          >
+            <span className="text-xl">🆕</span>
+            <span className="text-xs mt-0.5">New</span>
+            <span className="absolute top-1 right-2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1 animate-pulse">
+              {newMovieCount > 9 ? '9+' : newMovieCount}
+            </span>
+          </button>
+        )}
         <button
           onClick={onToggleBulkSelect}
           className={`flex flex-col items-center justify-center min-w-[4.5rem] h-full transition-colors ${

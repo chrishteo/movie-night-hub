@@ -106,6 +106,22 @@ export function useUserMovieStatus(authUserId) {
     }
   }, [authUserId])
 
+  // Acknowledge a movie (mark as reviewed) with optional watched status
+  const acknowledgeMovie = useCallback(async (movieId, alreadyWatched = false) => {
+    if (!authUserId) return
+
+    try {
+      const updates = { acknowledged: true }
+      if (alreadyWatched) {
+        updates.watched = true
+      }
+      await setUserMovieStatus(movieId, authUserId, updates)
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }, [authUserId])
+
   // Helper: Get my status for a movie
   const getMyStatus = useCallback((movieId) => {
     return myStatuses[movieId] || { watched: false, rating: 0 }
@@ -146,6 +162,7 @@ export function useUserMovieStatus(authUserId) {
     error,
     toggleMyWatched,
     setMyRating,
+    acknowledgeMovie,
     getMyStatus,
     getMovieStatuses,
     getAverageRating,

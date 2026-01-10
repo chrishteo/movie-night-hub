@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getAllMovies, getCollections, getCollectionMovies } from '../lib/database'
+import { getAllMovies, getCollections, getCollectionMovies, getUserMovieStatuses } from '../lib/database'
 
 export default function MoviePickerModal({
   maxPicks = 5,
@@ -10,6 +10,7 @@ export default function MoviePickerModal({
   darkMode
 }) {
   const [allMovies, setAllMovies] = useState([])
+  const [myStatuses, setMyStatuses] = useState({}) // Per-user movie statuses
   const [loading, setLoading] = useState(true)
   const [selectedMovies, setSelectedMovies] = useState([])
   const [search, setSearch] = useState('')
@@ -20,16 +21,24 @@ export default function MoviePickerModal({
   const [collectionMovieIds, setCollectionMovieIds] = useState([])
   const [loadingCollection, setLoadingCollection] = useState(false)
 
-  // Fetch all movies and collections
+  // Fetch all movies, collections, and user statuses
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [movies, cols] = await Promise.all([
+        const [movies, cols, userStatuses] = await Promise.all([
           getAllMovies(),
-          getCollections()
+          getCollections(),
+          authUserId ? getUserMovieStatuses(authUserId) : Promise.resolve([])
         ])
         setAllMovies(movies)
         setCollections(cols || [])
+
+        // Index statuses by movie_id for quick lookup
+        const statusMap = {}
+        ;(userStatuses || []).forEach(s => {
+          statusMap[s.movie_id] = s
+        })
+        setMyStatuses(statusMap)
       } catch (err) {
         console.error('Failed to fetch data:', err)
       } finally {
@@ -37,7 +46,7 @@ export default function MoviePickerModal({
       }
     }
     fetchData()
-  }, [])
+  }, [authUserId])
 
   // Fetch collection movies when a collection is selected
   useEffect(() => {
@@ -61,12 +70,12 @@ export default function MoviePickerModal({
     fetchCollectionMovies()
   }, [selectedCollection])
 
-  // Filter to user's unwatched movies
+  // Filter to user's unwatched movies (per-user watched status)
   const userUnwatchedMovies = useMemo(() => {
     return allMovies.filter(m =>
-      m.added_by === userName && !m.watched
+      m.added_by === userName && !myStatuses[m.id]?.watched
     )
-  }, [allMovies, userName])
+  }, [allMovies, userName, myStatuses])
 
   // Apply collection filter, then search filter
   const filteredMovies = useMemo(() => {

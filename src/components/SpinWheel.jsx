@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { getAllMovies, setUserMovieStatus, sendWatchInvites } from '../lib/database'
+import { getAllMovies, setUserMovieStatus, sendWatchInvites, getUserMovieStatuses } from '../lib/database'
 import ParticipantSelector from './ParticipantSelector'
 import { Avatar } from './AvatarPicker'
 import { useToast } from './Toast'
@@ -17,11 +17,14 @@ export default function SpinWheel({
   const { addToast } = useToast()
   const [spinning, setSpinning] = useState(false)
   const [selectedMovie, setSelectedMovie] = useState(null)
-  const [selectedUsers, setSelectedUsers] = useState(() =>
-    users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
-  )
+  // Pre-select current user by default
+  const [selectedUsers, setSelectedUsers] = useState(() => {
+    const currentUser = users.find(u => u.auth_id === authUserId)
+    return currentUser ? [currentUser.name] : []
+  })
   const [prioritizeShared, setPrioritizeShared] = useState(false)
   const [allMovies, setAllMovies] = useState([])
+  const [myStatuses, setMyStatuses] = useState({}) // Per-user movie statuses
   const [loading, setLoading] = useState(true)
 
   // Filter state
@@ -33,29 +36,54 @@ export default function SpinWheel({
   const [logParticipants, setLogParticipants] = useState([])
   const [loggingComplete, setLoggingComplete] = useState(false)
 
-  // Fetch all movies when component mounts (needed for accurate counts across all users)
+  // Fetch all movies and user statuses when component mounts
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchData = async () => {
       try {
-        const movies = await getAllMovies()
+        const [movies, userStatuses] = await Promise.all([
+          getAllMovies(),
+          authUserId ? getUserMovieStatuses(authUserId) : Promise.resolve([])
+        ])
         setAllMovies(movies)
+
+        // Index statuses by movie_id for quick lookup
+        const statusMap = {}
+        ;(userStatuses || []).forEach(s => {
+          statusMap[s.movie_id] = s
+        })
+        setMyStatuses(statusMap)
       } catch (err) {
         console.error('Failed to fetch movies for spin wheel:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchMovies()
-  }, [])
+    fetchData()
+  }, [authUserId])
 
-  // Filter movies by selected participants
+  // Filter movies by selected participants (empty if none selected)
   const participantMovies = selectedUsers.length > 0
     ? allMovies.filter(m => selectedUsers.includes(m.added_by))
-    : allMovies
+    : []
 
-  // Apply filters: unwatched + genre + mood
+  // Find current user's name for legacy movie ownership check
+  const currentUserName = users.find(u => u.auth_id === authUserId)?.name
+
+  // Apply filters: unwatched (per-user) + acknowledged + genre + mood
   const unwatched = participantMovies.filter(m => {
-    if (m.watched) return false
+    const myStatus = myStatuses[m.id]
+
+    // Exclude if I've watched it (per-user)
+    if (myStatus?.watched) return false
+
+    // Check if this is my own movie (by user_id or by added_by name for legacy movies)
+    const isOwnMovie = m.user_id === authUserId || m.added_by === currentUserName
+
+    // Exclude unacknowledged movies from other users (they haven't been reviewed yet)
+    // Only exclude if acknowledged is explicitly false (not undefined - for backward compat)
+    if (!isOwnMovie && myStatus?.acknowledged === false) return false
+
+    // Apply genre/mood filters
     if (genreFilter && m.genre !== genreFilter) return false
     if (moodFilter && m.mood !== moodFilter) return false
     return true

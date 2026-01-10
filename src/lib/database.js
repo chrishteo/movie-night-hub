@@ -753,6 +753,9 @@ export async function setUserMovieStatus(movieId, userId, updates) {
   if (updates.rating !== undefined) {
     statusData.rating = updates.rating
   }
+  if (updates.acknowledged !== undefined) {
+    statusData.acknowledged = updates.acknowledged
+  }
 
   const { data, error } = await supabase
     .from('user_movie_status')

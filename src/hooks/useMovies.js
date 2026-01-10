@@ -5,7 +5,8 @@ import {
   updateMovie as updateMovieDb,
   deleteMovie as deleteMovieDb,
   toggleMovieWatched,
-  subscribeToMovies
+  subscribeToMovies,
+  setUserMovieStatus
 } from '../lib/database'
 import { logAudit, AuditActions } from '../lib/api'
 
@@ -149,6 +150,18 @@ export function useMovies(authUserId = null, serverFilters = {}) {
       // Update local state immediately
       setMovies(prev => [newMovie, ...prev])
       setTotal(prev => prev + 1)
+
+      // Auto-acknowledge the movie for the user who added it
+      // This prevents it from appearing in their "new movies" notification
+      if (authUserId && newMovie?.id) {
+        try {
+          await setUserMovieStatus(newMovie.id, authUserId, { acknowledged: true })
+        } catch (ackErr) {
+          // Don't fail the add if acknowledgement fails
+          console.error('Failed to auto-acknowledge movie:', ackErr)
+        }
+      }
+
       return newMovie
     } catch (err) {
       setError(err.message)

@@ -5,6 +5,7 @@ import { getCollections, deleteCollection, updateUser } from './lib/database'
 import { useUsers } from './hooks/useUsers'
 import { useVotes } from './hooks/useVotes'
 import { useUserMovieStatus } from './hooks/useUserMovieStatus'
+import { useNewMovies } from './hooks/useNewMovies'
 import { useInvites } from './hooks/useInvites'
 import { useAuth } from './hooks/useAuth.jsx'
 import { useAdmin } from './hooks/useAdmin'
@@ -47,6 +48,7 @@ import GuidebookModal from './components/GuidebookModal'
 import WhatsNewModal from './components/WhatsNewModal'
 import InvitesModal from './components/InvitesModal'
 import ImportModal from './components/ImportModal'
+import NewMoviesModal from './components/NewMoviesModal'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -129,6 +131,7 @@ export default function App() {
     myStatuses,
     toggleMyWatched,
     setMyRating,
+    acknowledgeMovie,
     getMyStatus,
     getMovieStatuses,
     getAverageRating,
@@ -136,6 +139,14 @@ export default function App() {
     getWatchedCount,
     refetch: refetchMyStatuses
   } = useUserMovieStatus(authUserId)
+
+  // New movies notification (movies added by others that need acknowledgement)
+  const {
+    newMovies,
+    newMovieCount,
+    handleAcknowledge: acknowledgeNewMovie,
+    handleAcknowledgeAll: acknowledgeAllNewMovies
+  } = useNewMovies(movies, myStatuses, authUserId, acknowledgeMovie)
 
   const {
     invites,
@@ -241,6 +252,7 @@ export default function App() {
   const [showMyBugReports, setShowMyBugReports] = useState(false)
   const [showWhatsNew, setShowWhatsNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showNewMovies, setShowNewMovies] = useState(false)
   const [hasCheckedChangelog, setHasCheckedChangelog] = useState(false)
   const [adminCollections, setAdminCollections] = useState([])
 
@@ -832,6 +844,8 @@ export default function App() {
         onStartTutorial={startTour}
         onOpenWhatsNew={() => setShowWhatsNew(true)}
         onOpenGuidebook={openGuidebook}
+        onShowNewMovies={() => setShowNewMovies(true)}
+        newMovieCount={newMovieCount}
       />
 
       {/* Bulk Action Bar */}
@@ -898,6 +912,16 @@ export default function App() {
           }`}
         >
           Mine
+        </button>
+        <button
+          onClick={() => handleFilterChange('view', 'shared')}
+          className={`px-3 py-1.5 rounded text-sm ${
+            filters.view === 'shared'
+              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+              : card
+          }`}
+        >
+          Shared
         </button>
         <button
           onClick={() => setBulkSelectMode(!bulkSelectMode)}
@@ -1023,6 +1047,16 @@ export default function App() {
           }`}
         >
           Mine
+        </button>
+        <button
+          onClick={() => handleFilterChange('view', 'shared')}
+          className={`flex-1 py-2 rounded text-sm font-medium ${
+            filters.view === 'shared'
+              ? 'bg-purple-600 text-white'
+              : card
+          }`}
+        >
+          Shared
         </button>
         <button
           onClick={() => setBulkSelectMode(!bulkSelectMode)}
@@ -1390,6 +1424,18 @@ export default function App() {
         />
       )}
 
+      {/* New Movies Modal */}
+      {showNewMovies && (
+        <NewMoviesModal
+          movies={newMovies}
+          onAcknowledge={acknowledgeNewMovie}
+          onAcknowledgeAll={acknowledgeAllNewMovies}
+          onClose={() => setShowNewMovies(false)}
+          onViewDetails={setSelectedMovie}
+          darkMode={darkMode}
+        />
+      )}
+
       {/* Mobile Bottom Navigation */}
       <BottomNav
         onAddMovie={() => setShowAddMovie(true)}
@@ -1407,6 +1453,8 @@ export default function App() {
         onShowInvites={() => setShowInvites(true)}
         invitePendingCount={invitePendingCount}
         sessionInviteCount={sessionInvites.filter(i => i.status === 'invited').length}
+        onShowNewMovies={() => setShowNewMovies(true)}
+        newMovieCount={newMovieCount}
         isAdmin={isAdmin}
         darkMode={darkMode}
       />

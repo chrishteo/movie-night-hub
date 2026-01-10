@@ -64,6 +64,18 @@ export function filterMovies(movies, filters, currentUser, myStatuses = {}, allU
     }
     // Only filter by "mine" if currentUser is set to avoid filtering out all movies during initial load
     if (filters.view === 'mine' && currentUser && m.added_by !== currentUser) return false
+
+    // Shared view: movies from others that user has acknowledged but not watched
+    if (filters.view === 'shared' && currentUser) {
+      const myStatus = myStatuses[m.id]
+      // Must be from someone else
+      if (m.added_by === currentUser) return false
+      // Must be acknowledged (added to watchlist)
+      if (!myStatus?.acknowledged) return false
+      // Must not be watched yet
+      if (myStatus?.watched) return false
+    }
+
     if (filters.addedBy && m.added_by !== filters.addedBy) return false
     if (filters.genre && m.genre !== filters.genre) return false
     if (filters.mood && m.mood !== filters.mood) return false
