@@ -1,12 +1,24 @@
 import { GENRES, MOODS, STREAMING } from '../utils/constants'
+import { supabase } from './supabase'
+
+// Get auth headers for API calls
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`
+  }
+  return headers
+}
 
 // Quick search TMDB for multiple results
 export async function searchTMDB(query) {
+  const headers = await getAuthHeaders()
   const response = await fetch('/api/search-tmdb', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ query })
   })
 
@@ -19,11 +31,10 @@ export async function searchTMDB(query) {
 }
 
 export async function searchMovie(title, tmdbId = null) {
+  const headers = await getAuthHeaders()
   const response = await fetch('/api/search-movie', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ title, tmdbId })
   })
 
@@ -59,11 +70,10 @@ export async function searchMovie(title, tmdbId = null) {
 
 // Request AI-only enrichment for a movie
 export async function enrichMovieWithAI(title) {
+  const headers = await getAuthHeaders()
   const response = await fetch('/api/search-movie', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ title, aiOnly: true })
   })
 
@@ -106,11 +116,10 @@ export async function checkAIStatus() {
 
 // Lookup movies by IMDB IDs (for import)
 export async function lookupIMDBMovies(imdbIds) {
+  const headers = await getAuthHeaders()
   const response = await fetch('/api/lookup-imdb', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ imdbIds })
   })
 
@@ -123,11 +132,10 @@ export async function lookupIMDBMovies(imdbIds) {
 }
 
 export async function getRecommendations(movies, seedMovie = null) {
+  const headers = await getAuthHeaders()
   const response = await fetch('/api/recommendations', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ movies, seedMovie })
   })
 
@@ -151,4 +159,30 @@ export async function getRecommendations(movies, seedMovie = null) {
       ? rec.streaming.filter(s => STREAMING.includes(s))
       : []
   }))
+}
+
+// Audit logging - fire and forget, don't block UI
+export const AuditActions = {
+  ADMIN_GRANT: 'admin.grant',
+  ADMIN_REVOKE: 'admin.revoke',
+  USER_UPDATE: 'user.update',
+  MOVIE_DELETE: 'movie.delete',
+  MOVIE_DELETE_OTHER: 'movie.delete.other',
+  COLLECTION_DELETE: 'collection.delete',
+  VOTING_SESSION_CREATE: 'voting.session.create',
+  MOVIES_IMPORT: 'movies.import'
+}
+
+export async function logAudit(action, targetType = null, targetId = null, targetName = null, details = {}) {
+  try {
+    const headers = await getAuthHeaders()
+    // Fire and forget - don't await or block
+    fetch('/api/audit', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action, targetType, targetId, targetName, details })
+    }).catch(() => {}) // Silently ignore errors
+  } catch {
+    // Silently ignore - audit logging should never break the app
+  }
 }

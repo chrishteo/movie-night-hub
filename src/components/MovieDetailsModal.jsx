@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useToast } from './Toast'
 import { STREAMING_COLORS } from '../utils/constants'
 import { formatDate } from '../utils/helpers'
+import { supabase } from '../lib/supabase'
 
 function StreamingBadge({ service }) {
   return (
@@ -47,9 +48,16 @@ export default function MovieDetailsModal({
     setLoadingSimilar(true)
     setSimilarError(null)
     try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/similar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ title: movie.title, year: movie.year })
       })
       if (response.ok) {
@@ -75,9 +83,16 @@ export default function MovieDetailsModal({
     if (!onAddMovie) return
     setAddingId(similarMovie.tmdb_id)
     try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/search-movie', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ title: similarMovie.title })
       })
       if (response.ok) {

@@ -1040,12 +1040,12 @@ export async function updateParticipantStatus(sessionId, userId, status) {
   return data
 }
 
-export async function removeSessionParticipant(sessionId, oderId) {
+export async function removeSessionParticipant(sessionId, userId) {
   const { error } = await supabase
     .from('voting_session_participants')
     .delete()
     .eq('session_id', sessionId)
-    .eq('user_id', oderId)
+    .eq('user_id', userId)
 
   if (error) throw error
 }

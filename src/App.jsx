@@ -55,8 +55,14 @@ export default function App() {
 
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('movienight-darkmode')
-    return saved !== null ? JSON.parse(saved) : true
+    try {
+      const saved = localStorage.getItem('movienight-darkmode')
+      return saved !== null ? JSON.parse(saved) : true
+    } catch {
+      // Invalid data in localStorage - return default
+      localStorage.removeItem('movienight-darkmode')
+      return true
+    }
   })
 
   // UI state - moved up so serverFilters can use filters.view

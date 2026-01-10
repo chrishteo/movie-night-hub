@@ -1,9 +1,25 @@
+import { verifyAuth } from './auth-verify.js'
+import { checkRateLimit, rateLimitExceeded } from './rate-limit.js'
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Verify authentication
+  const user = await verifyAuth(req)
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required' })
+  }
+
+  // Check rate limit (20 requests per minute - lenient for browsing)
+  const rateLimit = await checkRateLimit(req, 'trending', user)
+  if (!rateLimit.allowed) {
+    return rateLimitExceeded(res, rateLimit.resetIn)
+  }
+  res.setHeader('X-RateLimit-Remaining', rateLimit.remaining)
 
   if (!TMDB_API_KEY) {
     return res.status(500).json({ error: 'TMDB API key not configured' });

@@ -7,6 +7,7 @@ import {
   toggleMovieWatched,
   subscribeToMovies
 } from '../lib/database'
+import { logAudit, AuditActions } from '../lib/api'
 
 export function useMovies(authUserId = null, serverFilters = {}) {
   const [movies, setMovies] = useState([])
@@ -167,12 +168,14 @@ export function useMovies(authUserId = null, serverFilters = {}) {
     }
   }, [])
 
-  const deleteMovie = useCallback(async (id) => {
+  const deleteMovie = useCallback(async (id, movieTitle = null) => {
     try {
       await deleteMovieDb(id)
       // Update local state immediately
       setMovies(prev => prev.filter(m => m.id !== id))
       setTotal(prev => prev - 1)
+      // Log the deletion
+      logAudit(AuditActions.MOVIE_DELETE, 'movie', id, movieTitle)
     } catch (err) {
       setError(err.message)
       throw err

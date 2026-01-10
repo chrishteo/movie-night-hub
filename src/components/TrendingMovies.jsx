@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useToast } from './Toast'
+import { supabase } from '../lib/supabase'
 
 // Hook for Escape key handling
 function useEscapeKey(onClose) {
@@ -35,7 +36,14 @@ export default function TrendingMovies({ onAddMovie, existingMovies, currentUser
     setError(null)
 
     try {
-      const response = await fetch(`/api/trending?window=${timeWindow}`)
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch(`/api/trending?window=${timeWindow}`, { headers })
       if (!response.ok) throw new Error('Failed to fetch trending movies')
 
       const data = await response.json()
@@ -57,10 +65,17 @@ export default function TrendingMovies({ onAddMovie, existingMovies, currentUser
     setAddingId(movie.tmdb_id)
 
     try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       // Fetch full movie details using existing search-movie API
       const response = await fetch('/api/search-movie', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ title: movie.title })
       })
 

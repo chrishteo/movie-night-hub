@@ -1,5 +1,6 @@
 import { GENRES, MOODS, STREAMING } from '../shared/constants.js'
 import { verifyAuth } from './auth-verify.js'
+import { checkRateLimit, rateLimitExceeded } from './rate-limit.js'
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const isDev = process.env.NODE_ENV !== 'production'
@@ -30,11 +31,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Verify authentication (optional but logged)
+  // Verify authentication - required for this endpoint
   const user = await verifyAuth(req)
-  if (isDev && user) {
-    console.log('Recommendations request from:', user.email)
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required' })
   }
+
+  // Check rate limit (5 requests per minute - more restrictive as this is expensive)
+  const rateLimit = await checkRateLimit(req, 'recommendations', user)
+  if (!rateLimit.allowed) {
+    return rateLimitExceeded(res, rateLimit.resetIn)
+  }
+  res.setHeader('X-RateLimit-Remaining', rateLimit.remaining)
 
   const { movies, seedMovie } = req.body
 

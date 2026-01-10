@@ -69,12 +69,32 @@ export default function ImportModal({
   const card = darkMode ? 'bg-gray-700' : 'bg-gray-100'
   const border = darkMode ? 'border-gray-600' : 'border-gray-300'
 
+  // Maximum file size: 10MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024
+
   // Handle file selection
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setError('')
+
+    // Validate file type
+    const isCSV = file.name.toLowerCase().endsWith('.csv') ||
+                  file.type === 'text/csv' ||
+                  file.type === 'application/vnd.ms-excel'
+
+    if (!isCSV) {
+      setError('Please upload a CSV file')
+      return
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`File too large. Maximum size is 10MB (your file: ${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -240,6 +260,7 @@ export default function ImportModal({
                 <span className="text-4xl">📁</span>
                 <span className="font-medium">Click to select CSV file</span>
                 <span className="text-sm opacity-70">or drag and drop</span>
+                <span className="text-xs opacity-50">Max file size: 10MB</span>
               </div>
             )}
           </div>

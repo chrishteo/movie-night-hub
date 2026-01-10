@@ -19,6 +19,7 @@ import {
   deleteChangelogEntry,
   subscribeToChangelog
 } from '../lib/database'
+import { logAudit, AuditActions } from '../lib/api'
 
 export function useAdmin(authUserId = null) {
   const [isAdmin, setIsAdmin] = useState(false)
@@ -92,9 +93,17 @@ export function useAdmin(authUserId = null) {
   }, [])
 
   // Admin actions
-  const toggleUserAdmin = useCallback(async (userId, makeAdmin) => {
+  const toggleUserAdmin = useCallback(async (userId, makeAdmin, userName = null) => {
     if (!isAdmin) throw new Error('Not authorized')
-    return await setUserAdmin(userId, makeAdmin)
+    const result = await setUserAdmin(userId, makeAdmin)
+    // Log the admin change
+    logAudit(
+      makeAdmin ? AuditActions.ADMIN_GRANT : AuditActions.ADMIN_REVOKE,
+      'user',
+      userId,
+      userName
+    )
+    return result
   }, [isAdmin])
 
   const removeUser = useCallback(async (userId) => {
@@ -102,9 +111,16 @@ export function useAdmin(authUserId = null) {
     await deleteUserAsAdmin(userId)
   }, [isAdmin])
 
-  const removeMovie = useCallback(async (movieId) => {
+  const removeMovie = useCallback(async (movieId, movieTitle = null) => {
     if (!isAdmin) throw new Error('Not authorized')
     await deleteMovieAsAdmin(movieId)
+    // Log admin movie deletion
+    logAudit(
+      AuditActions.MOVIE_DELETE_OTHER,
+      'movie',
+      movieId,
+      movieTitle
+    )
   }, [isAdmin])
 
   // Announcement actions

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 
 const RETRY_INTERVAL_MS = 30000 // Check every 30 seconds
 const MAX_QUEUE_SIZE = 10
@@ -54,9 +55,16 @@ export function useAIQueue() {
     const movie = queue[0]
 
     try {
+      // Get auth token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/search-movie', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           title: movie.title,
           aiOnly: true
