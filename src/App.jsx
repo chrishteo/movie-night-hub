@@ -49,6 +49,7 @@ import WhatsNewModal from './components/WhatsNewModal'
 import InvitesModal from './components/InvitesModal'
 import ImportModal from './components/ImportModal'
 import NewMoviesModal from './components/NewMoviesModal'
+import UpdateBanner from './components/UpdateBanner'
 
 export default function App() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -1634,6 +1635,9 @@ export default function App() {
 
       {/* PWA Install Prompt */}
       <InstallPrompt darkMode={darkMode} />
+
+      {/* PWA Update Banner */}
+      <UpdateBanner />
 
       {/* Welcome Modal - shown first for new users */}
       {showWelcome && (
