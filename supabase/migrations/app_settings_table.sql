@@ -19,5 +19,5 @@ CREATE POLICY "Anyone can read app settings"
 
 -- Insert the initial version
 INSERT INTO app_settings (key, value)
-VALUES ('latest_version', '1.10.3')
-ON CONFLICT (key) DO UPDATE SET value = '1.10.3', updated_at = NOW();
+VALUES ('latest_version', '1.10.4')
+ON CONFLICT (key) DO UPDATE SET value = '1.10.4', updated_at = NOW();
