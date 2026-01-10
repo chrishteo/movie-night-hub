@@ -61,9 +61,9 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
   - Keyboard navigation (arrows, Enter, Escape)
   - Re-watchable from profile menu
 - **Guidebook**: Comprehensive reference accessible from profile menu
-  - **Buttons tab**: All 12 action buttons explained
+  - **Buttons tab**: All 13 action buttons explained (including NEW badge)
   - **Filters tab**: 8 filter/view options documented
-  - **Features tab**: 8 main features with detailed descriptions
+  - **Features tab**: 9 main features with detailed descriptions
 
 ### Email Notifications (Admin)
 - **Resend Integration**: Email notifications via Supabase Edge Functions
@@ -471,6 +471,22 @@ Submit a bug report in the app - you should receive an email!
 ---
 
 ## Recent Updates (Jan 2026)
+
+### New Movies Notification System
+- **NEW Badge**: When other users add movies, you see a badge with a count of movies to review
+- **Three Review Options**:
+  - "Already Watched" - Marks movie as watched, excludes from spin/vote
+  - "Not Interested" - Acknowledges but excludes from your spin/vote rotation
+  - "Add to Watchlist" - Includes movie in your spin wheel and voting sessions
+- **Smart Duplicate Detection**: If you already have a movie by the same title, it won't show as NEW
+- **Bulk Action**: "Add All to Watchlist" button for quick acknowledgment
+- **Per-User Filtering**: Spin wheel and voting only include movies you're interested in
+
+### Version Check & Updates
+- **Database Version Check**: App checks latest version from Supabase `app_settings` table
+- **Update Banner**: Shows notification when a new version is available
+- **One-Click Update**: Refresh button to get the latest version
+- **Service Worker**: Automatic updates with skipWaiting for faster deployments
 
 ### Enhanced Admin Panel
 - **Collections Tab**: View all collections with owner info, delete any collection
