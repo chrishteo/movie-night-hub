@@ -19,7 +19,8 @@ const BUTTON_GUIDE = [
   { icon: '📅', name: 'Schedule', description: 'Plan movie nights with a calendar. Set dates, times, and invite friends.' },
   { icon: '📩', name: 'Invites', description: 'View and manage movie recommendations sent by friends.' },
   { icon: '☑️', name: 'Select', description: 'Enable bulk selection to mark multiple movies as watched or delete them.' },
-  { icon: '🆕', name: 'NEW', description: 'Review movies added by others. Shows a count badge when there are new movies to review.' }
+  { icon: '🆕', name: 'NEW', description: 'Review movies added by others. Shows a count badge when there are new movies to review.' },
+  { icon: '👥', name: 'Friends', description: 'Manage your friends list. Send and accept friend requests to see each other\'s movies.' }
 ]
 
 const FILTER_GUIDE = [
@@ -78,6 +79,11 @@ const FEATURE_GUIDE = [
     name: 'AI Recommendations',
     icon: '💡',
     description: 'Get personalized suggestions based on your watchlist patterns, favorite genres, and viewing history.'
+  },
+  {
+    name: 'Friends System',
+    icon: '👥',
+    description: 'Connect with friends to share movies. Send friend requests, and once accepted, you\'ll see each other\'s movies in all tabs. Only movies from friends appear in your list, spin wheel, and voting sessions.'
   }
 ]
 
