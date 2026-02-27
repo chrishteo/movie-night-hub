@@ -211,7 +211,7 @@ movie-night-hub/
 - **🎡 Spin**: Randomly pick from unwatched movies
   - Smooth easing animation (fast start, slow finish)
   - Select which participants' movies to include
-  - "Prioritize shared movies" option - picks from movies added by multiple people first
+  - "Prioritize shared movies" option - picks from movies everyone wants (added or marked interested)
   - Shows who added the winning movie
 - **🗳️ Vote**: Each user votes thumbs up/down, declare a winner
   - Toggle votes by clicking again to remove
@@ -588,7 +588,7 @@ Submit a bug report in the app - you should receive an email!
 - Smooth easing animation (fast start, dramatic slowdown)
 - Bigger display window for better visibility
 - Shows "Added by" info for winning movie
-- New "Prioritize shared movies" option - when enabled, picks from movies that multiple participants added
+- "Prioritize shared movies" option - picks from movies ALL participants want (added or marked interested via NEW badge)
 - Admin user excluded from participant selection
 
 ### Voting Enhancements

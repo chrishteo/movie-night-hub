@@ -73,7 +73,7 @@ const FEATURE_GUIDE = [
   {
     name: 'Spin Wheel',
     icon: '🎡',
-    description: 'Can\'t decide? Add participants and spin the wheel. It picks randomly from everyone\'s unwatched movies. Schedule directly from the result!'
+    description: 'Can\'t decide? Add participants and spin the wheel. It picks randomly from everyone\'s unwatched movies. Enable "Prioritize shared movies" to pick from movies everyone wants to watch. Schedule directly from the result!'
   },
   {
     name: 'AI Recommendations',
