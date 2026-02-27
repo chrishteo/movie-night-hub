@@ -1332,18 +1332,46 @@ export async function getLatestVersion() {
 
 export async function getFriends(userId) {
   // Get all accepted friendships for a user
-  // The friendships view is bidirectional, so this returns all friends
-  const { data, error } = await supabase
-    .from('friendships')
+  // Query friend_requests directly since views don't support joins
+  // Get requests where I'm the sender OR receiver with accepted status
+  const { data: sentRequests, error: err1 } = await supabase
+    .from('friend_requests')
     .select(`
-      friend_id,
+      id,
       created_at,
-      friend:friend_id (id, name, avatar, is_admin)
+      receiver:receiver_id (id, name, avatar, is_admin)
     `)
-    .eq('user_id', userId)
+    .eq('sender_id', userId)
+    .eq('status', 'accepted')
 
-  if (error) throw error
-  return data
+  const { data: receivedRequests, error: err2 } = await supabase
+    .from('friend_requests')
+    .select(`
+      id,
+      created_at,
+      sender:sender_id (id, name, avatar, is_admin)
+    `)
+    .eq('receiver_id', userId)
+    .eq('status', 'accepted')
+
+  if (err1) throw err1
+  if (err2) throw err2
+
+  // Combine and normalize to { friend_id, friend, created_at }
+  const friends = [
+    ...(sentRequests || []).map(r => ({
+      friend_id: r.receiver?.id,
+      friend: r.receiver,
+      created_at: r.created_at
+    })),
+    ...(receivedRequests || []).map(r => ({
+      friend_id: r.sender?.id,
+      friend: r.sender,
+      created_at: r.created_at
+    }))
+  ]
+
+  return friends
 }
 
 export async function getPendingFriendRequests(userId) {
