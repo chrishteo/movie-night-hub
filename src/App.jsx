@@ -7,6 +7,7 @@ import { useVotes } from './hooks/useVotes'
 import { useUserMovieStatus } from './hooks/useUserMovieStatus'
 import { useNewMovies } from './hooks/useNewMovies'
 import { useInvites } from './hooks/useInvites'
+import { useFriends } from './hooks/useFriends'
 import { useAuth } from './hooks/useAuth.jsx'
 import { useAdmin } from './hooks/useAdmin'
 import { useTutorial } from './hooks/useTutorial'
@@ -49,6 +50,7 @@ import WhatsNewModal from './components/WhatsNewModal'
 import InvitesModal from './components/InvitesModal'
 import ImportModal from './components/ImportModal'
 import NewMoviesModal from './components/NewMoviesModal'
+import FriendsModal from './components/FriendsModal'
 import UpdateBanner from './components/UpdateBanner'
 
 export default function App() {
@@ -163,6 +165,20 @@ export default function App() {
     deleteInvite
   } = useInvites(authUserId)
 
+  // Friends - for friend-based movie visibility
+  const currentUserObj = users.find(u => u.name === currentUser)
+  const {
+    friends,
+    pendingReceived: pendingFriendRequests,
+    pendingSent: sentFriendRequests,
+    pendingCount: pendingFriendCount,
+    sendRequest: sendFriendRequest,
+    acceptRequest: acceptFriendRequest,
+    rejectRequest: rejectFriendRequest,
+    cancelRequest: cancelFriendRequest,
+    unfriend
+  } = useFriends(currentUserObj?.id)
+
   // Voting sessions
   const {
     sessions: votingSessions,
@@ -260,6 +276,7 @@ export default function App() {
   const [showWhatsNew, setShowWhatsNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showNewMovies, setShowNewMovies] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
   const [hasCheckedChangelog, setHasCheckedChangelog] = useState(false)
   const [adminCollections, setAdminCollections] = useState([])
 
@@ -854,6 +871,8 @@ export default function App() {
         onOpenGuidebook={openGuidebook}
         onShowNewMovies={() => setShowNewMovies(true)}
         newMovieCount={newMovieCount}
+        onOpenFriends={() => setShowFriends(true)}
+        pendingFriendCount={pendingFriendCount}
       />
 
       {/* Bulk Action Bar */}
@@ -1278,6 +1297,7 @@ export default function App() {
           onScheduleMovie={handleScheduleFromPicker}
           darkMode={darkMode}
           authUserId={authUserId}
+          friendIds={friends.map(f => f.friend_id)}
         />
       )}
 
@@ -1301,6 +1321,7 @@ export default function App() {
           onDeleteSession={deleteSession}
           onClose={() => setShowVotingSessions(false)}
           darkMode={darkMode}
+          friendIds={friends.map(f => f.friend_id)}
         />
       )}
 
@@ -1340,6 +1361,7 @@ export default function App() {
           onViewDetails={setSelectedMovie}
           onScheduleMovie={handleScheduleFromPicker}
           darkMode={darkMode}
+          friendIds={friends.map(f => f.friend_id)}
         />
       )}
 
@@ -1442,6 +1464,23 @@ export default function App() {
           onClose={() => setShowNewMovies(false)}
           onViewDetails={setSelectedMovie}
           darkMode={darkMode}
+        />
+      )}
+
+      {/* Friends Modal */}
+      {showFriends && (
+        <FriendsModal
+          friends={friends}
+          pendingReceived={pendingFriendRequests}
+          pendingSent={sentFriendRequests}
+          onSendRequest={sendFriendRequest}
+          onAcceptRequest={acceptFriendRequest}
+          onRejectRequest={rejectFriendRequest}
+          onCancelRequest={cancelFriendRequest}
+          onUnfriend={unfriend}
+          onClose={() => setShowFriends(false)}
+          darkMode={darkMode}
+          currentUserId={currentUserObj?.id}
         />
       )}
 

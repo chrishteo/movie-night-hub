@@ -1327,3 +1327,180 @@ export async function getLatestVersion() {
   }
   return data?.value || null
 }
+
+// ============ FRIENDSHIPS ============
+
+export async function getFriends(userId) {
+  // Get all accepted friendships for a user
+  // The friendships view is bidirectional, so this returns all friends
+  const { data, error } = await supabase
+    .from('friendships')
+    .select(`
+      friend_id,
+      created_at,
+      friend:friend_id (id, name, avatar, is_admin)
+    `)
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return data
+}
+
+export async function getPendingFriendRequests(userId) {
+  // Get friend requests where I am the receiver and status is pending
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select(`
+      *,
+      sender:sender_id (id, name, avatar)
+    `)
+    .eq('receiver_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function getSentFriendRequests(userId) {
+  // Get friend requests I have sent that are still pending
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select(`
+      *,
+      receiver:receiver_id (id, name, avatar)
+    `)
+    .eq('sender_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function sendFriendRequest(senderId, receiverId) {
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .insert([{
+      sender_id: senderId,
+      receiver_id: receiverId,
+      status: 'pending'
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function respondToFriendRequest(requestId, accept) {
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .update({
+      status: accept ? 'accepted' : 'rejected',
+      responded_at: new Date().toISOString()
+    })
+    .eq('id', requestId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function cancelFriendRequest(requestId) {
+  const { error } = await supabase
+    .from('friend_requests')
+    .delete()
+    .eq('id', requestId)
+
+  if (error) throw error
+}
+
+export async function removeFriend(userId, friendId) {
+  // Delete the friend_request row (works for both directions due to RLS)
+  // First try where user is sender
+  let { error } = await supabase
+    .from('friend_requests')
+    .delete()
+    .eq('sender_id', userId)
+    .eq('receiver_id', friendId)
+    .eq('status', 'accepted')
+
+  if (error) {
+    // Try the other direction
+    const { error: error2 } = await supabase
+      .from('friend_requests')
+      .delete()
+      .eq('sender_id', friendId)
+      .eq('receiver_id', userId)
+      .eq('status', 'accepted')
+
+    if (error2) throw error2
+  }
+}
+
+export async function getFriendshipStatus(userId, otherUserId) {
+  // Check if there's any friend request between these two users
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select('*')
+    .or(`and(sender_id.eq.${userId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${userId})`)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows found
+
+  if (!data) return { status: 'none' }
+
+  if (data.status === 'accepted') return { status: 'friends', request: data }
+  if (data.status === 'pending') {
+    if (data.sender_id === userId) {
+      return { status: 'pending_sent', request: data }
+    } else {
+      return { status: 'pending_received', request: data }
+    }
+  }
+  return { status: 'none' }
+}
+
+export async function getPendingFriendRequestCount(userId) {
+  const { count, error } = await supabase
+    .from('friend_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('receiver_id', userId)
+    .eq('status', 'pending')
+
+  if (error) throw error
+  return count || 0
+}
+
+export async function searchUsersForFriendRequest(query, currentUserId) {
+  // Search for users by name, excluding current user
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name, avatar')
+    .neq('id', currentUserId)
+    .ilike('name', `%${query}%`)
+    .limit(10)
+
+  if (error) throw error
+  return data
+}
+
+export function subscribeToFriendRequests(userId, callback) {
+  return supabase
+    .channel(`friend-requests-${userId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'friend_requests',
+      filter: `receiver_id=eq.${userId}`
+    }, callback)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'friend_requests',
+      filter: `sender_id=eq.${userId}`
+    }, callback)
+    .subscribe()
+}

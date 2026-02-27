@@ -20,7 +20,9 @@ export default function Header({
   onOpenWhatsNew,
   onOpenGuidebook,
   onShowNewMovies,
-  newMovieCount = 0
+  newMovieCount = 0,
+  onOpenFriends,
+  pendingFriendCount = 0
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [editingAvatar, setEditingAvatar] = useState(false)
@@ -207,6 +209,24 @@ export default function Header({
             </>
           )}
         </div>
+
+        {/* Friends Button */}
+        <button
+          onClick={onOpenFriends}
+          className={`relative px-2 py-1 rounded border ${
+            darkMode
+              ? 'bg-gray-800 border-gray-700 hover:border-purple-500'
+              : 'bg-white border-gray-300 hover:border-purple-500'
+          }`}
+          title={pendingFriendCount > 0 ? `${pendingFriendCount} friend request${pendingFriendCount !== 1 ? 's' : ''}` : 'Friends'}
+        >
+          <span className="text-lg">👥</span>
+          {pendingFriendCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-bold px-1 animate-pulse">
+              {pendingFriendCount > 9 ? '9+' : pendingFriendCount}
+            </span>
+          )}
+        </button>
 
         {/* New Movies Badge */}
         {newMovieCount > 0 && (

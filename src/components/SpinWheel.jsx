@@ -12,7 +12,8 @@ export default function SpinWheel({
   onViewDetails,
   onScheduleMovie,
   darkMode,
-  authUserId = null
+  authUserId = null,
+  friendIds = []  // IDs of friends (for filtering participant list)
 }) {
   const { addToast } = useToast()
   const [spinning, setSpinning] = useState(false)
@@ -68,6 +69,12 @@ export default function SpinWheel({
 
   // Find current user's name for legacy movie ownership check
   const currentUserName = users.find(u => u.auth_id === authUserId)?.name
+  const currentUserAppId = users.find(u => u.auth_id === authUserId)?.id
+
+  // Filter users to only show friends + self (if friendIds provided)
+  const visibleUsers = friendIds.length > 0
+    ? users.filter(u => u.id === currentUserAppId || friendIds.includes(u.id))
+    : users
 
   // Apply filters: unwatched (per-user) + acknowledged + interested + genre + mood
   const unwatched = participantMovies.filter(m => {
@@ -123,7 +130,7 @@ export default function SpinWheel({
   }
 
   const selectAllUsers = () => setSelectedUsers(
-    users.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
+    visibleUsers.filter(u => u.name.toLowerCase() !== 'admin').map(u => u.name)
   )
   const selectNoUsers = () => setSelectedUsers([])
 
@@ -173,7 +180,7 @@ export default function SpinWheel({
 
   const handleStartLog = () => {
     // Pre-select participants based on who was selected for the spin
-    const preSelectedAuthIds = users
+    const preSelectedAuthIds = visibleUsers
       .filter(u => selectedUsers.includes(u.name) && u.auth_id && !u.is_admin)
       .map(u => u.auth_id)
     setLogParticipants(preSelectedAuthIds)
@@ -244,9 +251,9 @@ export default function SpinWheel({
         ) : (
           <>
             {/* Participant Selector */}
-            {users.length > 0 && (
+            {visibleUsers.length > 0 && (
           <ParticipantSelector
-            users={users}
+            users={visibleUsers}
             selectedUsers={selectedUsers}
             onToggleUser={toggleUser}
             onSelectAll={selectAllUsers}
@@ -410,7 +417,7 @@ export default function SpinWheel({
                 <div className={`mt-3 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                   <p className="font-medium mb-3">Who watched the movie?</p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {users.filter(u => u.auth_id && !u.is_admin).map(user => (
+                    {visibleUsers.filter(u => u.auth_id && !u.is_admin).map(user => (
                       <button
                         key={user.id}
                         onClick={() => toggleLogParticipant(user.auth_id)}

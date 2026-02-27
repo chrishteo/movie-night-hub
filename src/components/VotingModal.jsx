@@ -17,7 +17,8 @@ export default function VotingModal({
   onClose,
   onViewDetails,
   onScheduleMovie,
-  darkMode
+  darkMode,
+  friendIds = []  // IDs of friends (for filtering participant list)
 }) {
   const {
     participants,
@@ -236,11 +237,16 @@ export default function VotingModal({
     }
   }
 
-  // Get users not yet in this session for adding
+  // Get current user's app ID for filtering
+  const currentUserAppId = users.find(u => u.auth_id === authUserId)?.id
+
+  // Get users not yet in this session for adding (filtered to friends only)
   const availableUsers = users.filter(u =>
     u.name.toLowerCase() !== 'admin' &&
     u.auth_id &&
-    !participants.some(p => p.user_id === u.auth_id)
+    !participants.some(p => p.user_id === u.auth_id) &&
+    // If friendIds provided, only show friends (not self - self is already in session as creator)
+    (friendIds.length === 0 || friendIds.includes(u.id))
   )
 
   const handleAddParticipant = async (user) => {

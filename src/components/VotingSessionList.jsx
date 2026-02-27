@@ -18,7 +18,8 @@ export default function VotingSessionList({
   onAcceptWithMovies,
   onDeleteSession,
   onClose,
-  darkMode
+  darkMode,
+  friendIds = []  // IDs of friends (for filtering participant list)
 }) {
   const { addToast } = useToast()
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -38,9 +39,12 @@ export default function VotingSessionList({
   const cardInner = darkMode ? 'bg-gray-700' : 'bg-gray-100'
   const border = darkMode ? 'border-gray-700' : 'border-gray-300'
 
-  // Filter out admin and current user for participant selection
+  // Filter out admin and current user for participant selection (only show friends)
   const selectableUsers = users.filter(u =>
-    u.name.toLowerCase() !== 'admin' && u.auth_id !== authUserId
+    u.name.toLowerCase() !== 'admin' &&
+    u.auth_id !== authUserId &&
+    // If friendIds provided, only show friends
+    (friendIds.length === 0 || friendIds.includes(u.id))
   )
 
   const handleCreateSession = async () => {
