@@ -13,7 +13,8 @@ export default function SpinWheel({
   onScheduleMovie,
   darkMode,
   authUserId = null,
-  friendIds = []  // IDs of friends (for filtering participant list)
+  friendIds = [],  // IDs of friends (for filtering participant list)
+  allUserStatuses = []  // All user statuses for checking shared interest
 }) {
   const { addToast } = useToast()
   const [spinning, setSpinning] = useState(false)
@@ -99,24 +100,34 @@ export default function SpinWheel({
     return true
   })
 
-  // Find shared movies (same title added by multiple selected users)
+  // Find shared movies (ALL selected users either added it OR are interested)
   const getSharedMovies = () => {
     if (selectedUsers.length < 2) return []
 
-    // Group movies by normalized title
-    const titleMap = {}
-    unwatched.forEach(movie => {
-      const normalizedTitle = movie.title.toLowerCase().trim()
-      if (!titleMap[normalizedTitle]) {
-        titleMap[normalizedTitle] = { movie, addedBy: new Set() }
-      }
-      titleMap[normalizedTitle].addedBy.add(movie.added_by)
+    // Build a map: userName -> auth_id for status lookups
+    const userAuthMap = {}
+    visibleUsers.forEach(u => {
+      userAuthMap[u.name] = u.auth_id
     })
 
-    // Return movies where multiple selected users added the same title
-    return Object.values(titleMap)
-      .filter(entry => entry.addedBy.size > 1)
-      .map(entry => entry.movie)
+    // Return movies where ALL selected users want it (added or interested)
+    return unwatched.filter(movie => {
+      return selectedUsers.every(userName => {
+        // Check if they added the movie
+        if (movie.added_by === userName) return true
+
+        // Check if they're interested (via status)
+        const userAuthId = userAuthMap[userName]
+        if (!userAuthId) return false
+
+        const status = allUserStatuses.find(s =>
+          s.movie_id === movie.id && s.user_id === userAuthId
+        )
+
+        // Must be acknowledged AND not marked as "not interested"
+        return status?.acknowledged && status?.interested !== false
+      })
+    })
   }
 
   const sharedMovies = getSharedMovies()
@@ -330,7 +341,7 @@ export default function SpinWheel({
                   ({sharedMovies.length} found)
                 </span>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Pick from movies added by multiple people first
+                  Pick from movies everyone wants to watch
                 </p>
               </div>
             </label>
@@ -339,7 +350,7 @@ export default function SpinWheel({
               darkMode ? 'bg-gray-700/30 border border-gray-700' : 'bg-gray-100 border border-gray-300'
             }`}>
               <p className="text-sm text-gray-400">
-                No shared unwatched movies between selected participants
+                No movies that everyone wants to watch
               </p>
             </div>
           )

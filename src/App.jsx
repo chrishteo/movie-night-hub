@@ -1298,6 +1298,7 @@ export default function App() {
           darkMode={darkMode}
           authUserId={authUserId}
           friendIds={friends.map(f => f.friend_id)}
+          allUserStatuses={allUserStatuses}
         />
       )}
 
