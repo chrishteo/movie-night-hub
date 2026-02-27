@@ -7,6 +7,11 @@ A collaborative movie watchlist app for groups of friends to manage movies and d
 ### Core Features
 - **Movie Management**: Add, edit, and delete movies with full details (title, director, year, genre, mood, rating, poster, streaming services)
 - **Multi-User Support**: User profiles with avatars, linked to authentication
+- **Friends System**: Connect with other users via friend requests
+  - Send and accept friend requests (bidirectional)
+  - Only see movies from yourself and your friends
+  - Spin wheel and voting sessions filter to friends only
+  - Existing users auto-friended on migration
 - **Decision Tools**:
   - Spin the Wheel: Random movie picker with participant selection
   - Voting System: Users vote yes/no on movies with participant selection
@@ -470,7 +475,15 @@ Submit a bug report in the app - you should receive an email!
 
 ---
 
-## Recent Updates (Jan 2026)
+## Recent Updates (Feb 2026)
+
+### Friends System (v1.11.0)
+- **Friend Requests**: Send and accept friend requests to connect with other users
+- **Movie Visibility**: Only see movies from yourself and accepted friends
+- **Filtered Participation**: Spin wheel and voting sessions only show friends as participants
+- **Friends Modal**: Manage friends, view pending requests, search and add new friends
+- **Auto-Migration**: Existing users are automatically friended (no disruption)
+- **New Migration Required**: Run `supabase/migrations/friendships.sql`
 
 ### New Movies Notification System
 - **NEW Badge**: When other users add movies, you see a badge with a count of movies to review
